@@ -1,0 +1,55 @@
+lock:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
+
+unlock:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
+
+horn:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
+
+flash_lights:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
+
+engine_start:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
+
+engine_stop:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
+
+dtc_reset:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: fmc130_traccar
