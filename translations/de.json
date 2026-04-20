@@ -1,0 +1,128 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert"
+    },
+    "error": {
+      "cannot_connect": "Verbindung zu Traccar fehlgeschlagen, bitte überprüfen Sie Ihre Anmeldedaten und den Host.",
+      "missing_auth": "Bitte geben Sie entweder Benutzername/Passwort oder ein API-Token an.",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "host": "Host",
+          "password": "Passwort",
+          "port": "Port",
+          "token": "API-Token",
+          "use_ssl": "SSL verwenden",
+          "username": "Benutzername",
+          "verify_ssl": "SSL-Zertifikat überprüfen"
+        },
+        "description": "Bitte geben Sie Ihre Traccar-Verbindungsdaten ein.",
+        "title": "Mit Traccar-Server verbinden"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "host": "Host",
+          "password": "Passwort (leer lassen, um beizubehalten)",
+          "port": "Port",
+          "token": "API-Token (leer lassen, um beizubehalten)",
+          "use_ssl": "SSL verwenden",
+          "username": "Benutzername",
+          "verify_ssl": "SSL-Zertifikat überprüfen",
+          "map_door_fl": "Traccar-Attribut für Tür vorne links",
+          "map_door_fr": "Traccar-Attribut für Tür vorne rechts",
+          "map_door_rl": "Traccar-Attribut für Tür hinten links",
+          "map_door_rr": "Traccar-Attribut für Tür hinten rechts",
+          "map_dtc": "Traccar-Attribut für Fehlercodes (DTC)",
+          "map_fuel": "Traccar-Attribut für Kraftstoff",
+          "map_handbrake": "Traccar-Attribut für Handbremse",
+          "map_lights": "Traccar-Attribut für Licht",
+          "map_locked": "Traccar-Attribut für Verriegelungsstatus",
+          "map_oil": "Traccar-Attribut für Öl",
+          "map_rpm": "Traccar-Attribut für Drehzahl (RPM)",
+          "map_windows": "Traccar-Attribut für Fensterstatus"
+        },
+        "description": "Aktualisieren Sie Ihre Traccar-Verbindungsdaten und konfigurieren Sie die CAN-Datenzuordnung. Lassen Sie die Zuordnungen auf den Standardwerten, wenn der Standard-Traccar-Decoder verwendet wird.",
+        "title": "Verbindung und CAN-Datenzuordnung konfigurieren"
+      }
+    }
+  },
+  "services": {
+    "lock": {
+      "name": "Verriegeln",
+      "description": "Sendet einen Verriegelungsbefehl an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    },
+    "unlock": {
+      "name": "Entriegeln",
+      "description": "Sendet einen Entriegelungsbefehl an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    },
+    "horn": {
+      "name": "Hupe",
+      "description": "Sendet einen Hupbefehl an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    },
+    "flash_lights": {
+      "name": "Lichthupe",
+      "description": "Sendet einen Lichthupenbefehl an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    },
+    "engine_start": {
+      "name": "Motor starten",
+      "description": "Sendet einen Motorstartbefehl an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    },
+    "engine_stop": {
+      "name": "Motor stoppen",
+      "description": "Sendet einen Motorstoppbefehl an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    },
+    "dtc_reset": {
+      "name": "Fehlercodes (DTC) zurücksetzen",
+      "description": "Sendet einen Befehl zum Zurücksetzen der Fehlercodes an das Fahrzeug über Traccar.",
+      "fields": {
+        "device_id": {
+          "name": "Gerät",
+          "description": "Die Home Assistant Geräte-ID des Trackers."
+        }
+      }
+    }
+  }
+}

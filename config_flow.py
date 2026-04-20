@@ -66,84 +66,115 @@ USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-def OPTIONS_SCHEMA(options: dict[str, Any]) -> vol.Schema:
+def OPTIONS_SCHEMA(options: dict[str, Any], initial_data: dict[str, Any]) -> vol.Schema:
     """Return options schema."""
-    return vol.Schema(
-        {
-            vol.Optional(
-                CONF_MAPPING_RPM,
-                default=options.get(
-                    CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_FUEL,
-                default=options.get(
-                    CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_OIL,
-                default=options.get(
-                    CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_DTC,
-                default=options.get(
-                    CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_DOOR_FL,
-                default=options.get(
-                    CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_DOOR_FR,
-                default=options.get(
-                    CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_DOOR_RL,
-                default=options.get(
-                    CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_DOOR_RR,
-                default=options.get(
-                    CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_LOCKED,
-                default=options.get(
-                    CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_WINDOWS,
-                default=options.get(
-                    CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_HANDBRAKE,
-                default=options.get(
-                    CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE]
-                ),
-            ): str,
-            vol.Optional(
-                CONF_MAPPING_LIGHTS,
-                default=options.get(
-                    CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS]
-                ),
-            ): str,
-        }
+    schema_dict = {
+        vol.Required(
+            CONF_HOST,
+            default=options.get(CONF_HOST, initial_data.get(CONF_HOST)),
+        ): str,
+        vol.Required(
+            CONF_PORT,
+            default=options.get(CONF_PORT, initial_data.get(CONF_PORT, DEFAULT_PORT)),
+        ): int,
+    }
+
+    username = options.get(CONF_USERNAME, initial_data.get(CONF_USERNAME))
+    if username:
+        schema_dict[vol.Optional(CONF_USERNAME, default=username)] = str
+    else:
+        schema_dict[vol.Optional(CONF_USERNAME)] = str
+
+    schema_dict[vol.Optional(CONF_PASSWORD)] = selector.TextSelector(
+        selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
     )
+    schema_dict[vol.Optional(CONF_TOKEN)] = selector.TextSelector(
+        selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+    )
+    schema_dict[vol.Required(
+        CONF_USE_SSL,
+        default=options.get(CONF_USE_SSL, initial_data.get(CONF_USE_SSL, DEFAULT_USE_SSL)),
+    )] = bool
+    schema_dict[vol.Required(
+        CONF_VERIFY_SSL,
+        default=options.get(CONF_VERIFY_SSL, initial_data.get(CONF_VERIFY_SSL, True)),
+    )] = bool
+
+    schema_dict.update({
+        vol.Optional(
+            CONF_MAPPING_RPM,
+            default=options.get(
+                CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_FUEL,
+            default=options.get(
+                CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_OIL,
+            default=options.get(
+                CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_DTC,
+            default=options.get(
+                CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_DOOR_FL,
+            default=options.get(
+                CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_DOOR_FR,
+            default=options.get(
+                CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_DOOR_RL,
+            default=options.get(
+                CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_DOOR_RR,
+            default=options.get(
+                CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_LOCKED,
+            default=options.get(
+                CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_WINDOWS,
+            default=options.get(
+                CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_HANDBRAKE,
+            default=options.get(
+                CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE]
+            ),
+        ): str,
+        vol.Optional(
+            CONF_MAPPING_LIGHTS,
+            default=options.get(
+                CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS]
+            ),
+        ): str,
+    })
+    return vol.Schema(schema_dict)
 
 
 class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -212,9 +243,27 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
+            # Preserve existing credentials if not overwritten
+            if not user_input.get(CONF_PASSWORD):
+                user_input[CONF_PASSWORD] = self.config_entry.options.get(
+                    CONF_PASSWORD, self.config_entry.data.get(CONF_PASSWORD)
+                )
+            if not user_input.get(CONF_TOKEN):
+                user_input[CONF_TOKEN] = self.config_entry.options.get(
+                    CONF_TOKEN, self.config_entry.data.get(CONF_TOKEN)
+                )
+            
+            # Remove empty strings to avoid overriding with empty
+            if not user_input.get(CONF_USERNAME):
+                user_input.pop(CONF_USERNAME, None)
+            if not user_input.get(CONF_PASSWORD):
+                user_input.pop(CONF_PASSWORD, None)
+            if not user_input.get(CONF_TOKEN):
+                user_input.pop(CONF_TOKEN, None)
+
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
             step_id="init",
-            data_schema=OPTIONS_SCHEMA(self.config_entry.options),
+            data_schema=OPTIONS_SCHEMA(self.config_entry.options, dict(self.config_entry.data)),
         )

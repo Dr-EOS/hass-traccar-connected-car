@@ -28,6 +28,13 @@
     "step": {
       "init": {
         "data": {
+          "host": "Host",
+          "password": "Password (leave empty to keep current)",
+          "port": "Port",
+          "token": "API Token (leave empty to keep current)",
+          "use_ssl": "Use SSL",
+          "username": "Username",
+          "verify_ssl": "Verify SSL certificate",
           "map_door_fl": "Traccar attribute for Door Front Left",
           "map_door_fr": "Traccar attribute for Door Front Right",
           "map_door_rl": "Traccar attribute for Door Rear Left",
@@ -41,8 +48,8 @@
           "map_rpm": "Traccar attribute for RPM",
           "map_windows": "Traccar attribute for Window Status"
         },
-        "description": "Enter the Traccar attributes keys to map to Home Assistant entities. Leave defaults if standard Traccar decoder is used.",
-        "title": "Configure CAN Data Mapping"
+        "description": "Update your Traccar connection details and configure the CAN data mapping. Leave mappings at defaults if standard Traccar decoder is used.",
+        "title": "Configure Connection and CAN Data Mapping"
       }
     }
   },

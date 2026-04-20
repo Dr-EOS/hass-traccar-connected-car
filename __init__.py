@@ -55,13 +55,13 @@ async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: Fmc130TraccarConfigEntry) -> bool:
     """Set up FMC130 Traccar from a config entry."""
-    host = entry.data[CONF_HOST]
-    port = entry.data[CONF_PORT]
-    username = entry.data.get(CONF_USERNAME)
-    password = entry.data.get(CONF_PASSWORD)
-    use_ssl = entry.data[CONF_USE_SSL]
-    token = entry.data.get(CONF_TOKEN)
-    verify_ssl = entry.data.get(CONF_VERIFY_SSL, True)
+    host = entry.options.get(CONF_HOST, entry.data[CONF_HOST])
+    port = entry.options.get(CONF_PORT, entry.data[CONF_PORT])
+    username = entry.options.get(CONF_USERNAME, entry.data.get(CONF_USERNAME))
+    password = entry.options.get(CONF_PASSWORD, entry.data.get(CONF_PASSWORD))
+    use_ssl = entry.options.get(CONF_USE_SSL, entry.data[CONF_USE_SSL])
+    token = entry.options.get(CONF_TOKEN, entry.data.get(CONF_TOKEN))
+    verify_ssl = entry.options.get(CONF_VERIFY_SSL, entry.data.get(CONF_VERIFY_SSL, True))
 
     session = async_get_clientsession(hass)
     client = TraccarClient(
