@@ -1,22 +1,9 @@
-"""FMC130 Traccar API Client.
-
-Generated with ha-integration@aurora-smart-home v1.0.0
-https://github.com/tonylofgren/aurora-smart-home
-"""
-
-from __future__ import annotations
-
 import asyncio
-import contextlib
-import logging
 from typing import Any
-
 import aiohttp
-
 
 class TraccarApiError(Exception):
     """Exception to indicate a Traccar API error."""
-
 
 class TraccarClient:
     """Client for interacting with Traccar API."""
@@ -51,10 +38,12 @@ class TraccarClient:
     async def _request(self, method: str, path: str, **kwargs) -> Any:
         """Make a request to the API."""
         if self._session is None:
-             raise TraccarApiError("ClientSession is not initialized")
+            # Fallback for unexpected usage outside of HA managed session
+            # This should ideally not be reached in production HA code
+            self._session = aiohttp.ClientSession()
 
         url = f"{self.base_url}{path}"
-
+        
         headers = kwargs.pop("headers", {})
         auth = None
 
@@ -63,26 +52,14 @@ class TraccarClient:
         elif self._username and self._password:
             auth = aiohttp.BasicAuth(self._username, self._password)
 
-        logger = logging.getLogger(__name__)
-        logger.debug(
-            "Requesting %s %s with %s",
-            method,
-            url,
-            kwargs.get("json", kwargs.get("params")),
-        )
-
         try:
             async with asyncio.timeout(10):
                 async with self._session.request(
-                    method,
-                    url,
-                    auth=auth,
-                    headers=headers,
-                    ssl=self._verify_ssl,
-                    **kwargs,
+                    method, url, auth=auth, headers=headers, ssl=self._verify_ssl, **kwargs
                 ) as resp:
                     if resp.status >= 400:
-                        await self._handle_error(resp, logger, method, url)
+                        text = await resp.text()
+                        raise TraccarApiError(f"HTTP {resp.status}: {text}")
                     return await resp.json()
         except TimeoutError as err:
             raise TraccarApiError("Timeout connecting to Traccar") from err
@@ -90,12 +67,6 @@ class TraccarClient:
             raise TraccarApiError(f"Connection error: {err}") from err
         except Exception as err:
             raise TraccarApiError(f"Unexpected error: {err}") from err
-
-    async def _handle_error(self, resp, logger, method, url) -> None:
-        """Handle error response."""
-        text = await resp.text()
-        logger.error("Error from Traccar: %s %s - %s", method, url, text)
-        raise TraccarApiError(f"HTTP {resp.status}: {text}")
 
     async def get_devices(self) -> Any:
         """Fetch all devices."""
@@ -105,9 +76,7 @@ class TraccarClient:
         """Fetch all positions."""
         return await self._request("GET", "/positions")
 
-    async def send_command(self, device_id: int | str, command: dict[str, Any]) -> Any:
+    async def send_command(self, device_id: int, command: dict[str, Any]) -> Any:
         """Send a command to a device."""
-        with contextlib.suppress(ValueError, TypeError):
-            device_id = int(device_id)
         payload = {"deviceId": device_id, **command}
         return await self._request("POST", "/commands/send", json=payload)

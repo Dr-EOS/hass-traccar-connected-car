@@ -1,54 +1,78 @@
+# custom_components/fmc130_traccar/services.yaml
 lock:
+  name: car.lock
+  description: Sends a lock command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
+      example: "1234567890abcdef"
       required: true
       selector:
         device:
           integration: fmc130_traccar
 
 unlock:
+  name: car.unlock
+  description: Sends an unlock command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
+      example: "1234567890abcdef"
       required: true
       selector:
         device:
           integration: fmc130_traccar
 
 horn:
+  name: car.horn
+  description: Sends a horn command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
       required: true
       selector:
         device:
           integration: fmc130_traccar
 
 flash_lights:
+  name: car.flash_lights
+  description: Sends a flash lights command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
       required: true
       selector:
         device:
           integration: fmc130_traccar
 
 engine_start:
+  name: car.engine_start
+  description: Sends an engine start command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
       required: true
       selector:
         device:
           integration: fmc130_traccar
 
 engine_stop:
+  name: car.engine_stop
+  description: Sends an engine stop command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
       required: true
       selector:
         device:
           integration: fmc130_traccar
 
 dtc_reset:
+  name: car.dtc_reset
+  description: Sends a DTC reset command to the vehicle via Traccar.
   fields:
     device_id:
+      description: The Home Assistant device ID of the tracker.
       required: true
       selector:
         device:

@@ -1,126 +1,47 @@
 {
   "config": {
-    "abort": {
-      "already_configured": "Device is already configured"
+    "step": {
+      "user": {
+        "title": "Connect to Traccar Server",
+        "description": "Please enter your Traccar connection details.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "token": "API Token",
+          "use_ssl": "Use SSL",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
     },
     "error": {
       "cannot_connect": "Failed to connect to Traccar, please check your credentials and host.",
       "missing_auth": "Please provide either Username/Password or an API Token.",
       "unknown": "Unknown error occurred"
     },
-    "step": {
-      "user": {
-        "data": {
-          "host": "Host",
-          "password": "Password",
-          "port": "Port",
-          "token": "API Token",
-          "use_ssl": "Use SSL",
-          "username": "Username",
-          "verify_ssl": "Verify SSL certificate"
-        },
-        "description": "Please enter your Traccar connection details.",
-        "title": "Connect to Traccar Server"
-      }
+    "abort": {
+      "already_configured": "Device is already configured"
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Configure CAN Data Mapping",
+        "description": "Enter the Traccar attributes keys to map to Home Assistant entities. Leave defaults if standard Traccar decoder is used.",
         "data": {
-          "host": "Host",
-          "password": "Password (leave empty to keep current)",
-          "port": "Port",
-          "token": "API Token (leave empty to keep current)",
-          "use_ssl": "Use SSL",
-          "username": "Username",
-          "verify_ssl": "Verify SSL certificate",
+          "map_rpm": "Traccar attribute for RPM",
+          "map_fuel": "Traccar attribute for Fuel",
+          "map_oil": "Traccar attribute for Oil",
+          "map_dtc": "Traccar attribute for DTC",
           "map_door_fl": "Traccar attribute for Door Front Left",
           "map_door_fr": "Traccar attribute for Door Front Right",
           "map_door_rl": "Traccar attribute for Door Rear Left",
           "map_door_rr": "Traccar attribute for Door Rear Right",
-          "map_dtc": "Traccar attribute for DTC",
-          "map_fuel": "Traccar attribute for Fuel",
-          "map_handbrake": "Traccar attribute for Handbrake",
-          "map_lights": "Traccar attribute for Lights",
           "map_locked": "Traccar attribute for Locked Status",
-          "map_oil": "Traccar attribute for Oil",
-          "map_rpm": "Traccar attribute for RPM",
-          "map_windows": "Traccar attribute for Window Status"
-        },
-        "description": "Update your Traccar connection details and configure the CAN data mapping. Leave mappings at defaults if standard Traccar decoder is used.",
-        "title": "Configure Connection and CAN Data Mapping"
-      }
-    }
-  },
-  "services": {
-    "lock": {
-      "name": "Lock",
-      "description": "Sends a lock command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "unlock": {
-      "name": "Unlock",
-      "description": "Sends an unlock command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "horn": {
-      "name": "Horn",
-      "description": "Sends a horn command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "flash_lights": {
-      "name": "Flash lights",
-      "description": "Sends a flash lights command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "engine_start": {
-      "name": "Engine start",
-      "description": "Sends an engine start command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "engine_stop": {
-      "name": "Engine stop",
-      "description": "Sends an engine stop command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "dtc_reset": {
-      "name": "DTC reset",
-      "description": "Sends a DTC reset command to the vehicle via Traccar.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
+          "map_windows": "Traccar attribute for Window Status",
+          "map_handbrake": "Traccar attribute for Handbrake",
+          "map_lights": "Traccar attribute for Lights"
         }
       }
     }

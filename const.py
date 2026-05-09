@@ -8,7 +8,14 @@ CONF_USE_SSL = "use_ssl"
 CONF_TOKEN = "token"
 CONF_VERIFY_SSL = "verify_ssl"
 
+# Direct Listener Config
+CONF_LISTENER_PORT = "listener_port"
+CONF_TLS_ENABLED = "tls_enabled"
+CONF_SSL_CERT = "ssl_cert"
+CONF_SSL_KEY = "ssl_key"
+
 DEFAULT_PORT = 8082
+DEFAULT_LISTENER_PORT = 5027
 DEFAULT_USE_SSL = True
 
 CONF_MAPPING_RPM = "map_rpm"
