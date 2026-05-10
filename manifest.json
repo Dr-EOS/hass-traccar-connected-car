@@ -1,7 +1,7 @@
 {
   "domain": "fmc130_traccar",
-  "name": "FMC130 Traccar Car Control",
-  "version": "1.1.0",
+  "name": "Teltonika FMC130 Connected Car",
+  "version": "1.2.0",
   "codeowners": ["@sascha"],
   "config_flow": true,
   "documentation": "https://github.com/Dr-EOS/hass-traccar-connected-car",

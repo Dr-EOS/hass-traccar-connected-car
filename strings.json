@@ -1,23 +1,22 @@
 {
+  "title": "Teltonika FMC130 Connected Car",
   "config": {
     "step": {
       "user": {
-        "title": "Connect to Traccar Server",
-        "description": "Please enter your Traccar connection details.",
+        "title": "Configure Teltonika FMC130",
+        "description": "Configure your Teltonika device for direct telemetry reception via TCP/TLS.",
         "data": {
-          "host": "Host",
-          "port": "Port",
-          "username": "Username",
-          "password": "Password",
-          "token": "API Token",
-          "use_ssl": "Use SSL",
-          "verify_ssl": "Verify SSL certificate"
+          "device_name": "Friendly Name",
+          "imei": "Device IMEI (15 digits)",
+          "listener_port": "TCP Port",
+          "tls_mode": "Encryption (TLS)",
+          "ssl_cert": "SSL Certificate Path",
+          "ssl_key": "SSL Key Path"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to Traccar, please check your credentials and host.",
-      "missing_auth": "Please provide either Username/Password or an API Token.",
+      "invalid_imei": "Invalid IMEI format. Please enter exactly 15 digits.",
       "unknown": "Unknown error occurred"
     },
     "abort": {
@@ -27,21 +26,21 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure CAN Data Mapping",
-        "description": "Enter the Traccar attributes keys to map to Home Assistant entities. Leave defaults if standard Traccar decoder is used.",
+        "title": "Configure Data Mapping",
+        "description": "Enter the IO IDs or attribute keys to map to Home Assistant entities.",
         "data": {
-          "map_rpm": "Traccar attribute for RPM",
-          "map_fuel": "Traccar attribute for Fuel",
-          "map_oil": "Traccar attribute for Oil",
-          "map_dtc": "Traccar attribute for DTC",
-          "map_door_fl": "Traccar attribute for Door Front Left",
-          "map_door_fr": "Traccar attribute for Door Front Right",
-          "map_door_rl": "Traccar attribute for Door Rear Left",
-          "map_door_rr": "Traccar attribute for Door Rear Right",
-          "map_locked": "Traccar attribute for Locked Status",
-          "map_windows": "Traccar attribute for Window Status",
-          "map_handbrake": "Traccar attribute for Handbrake",
-          "map_lights": "Traccar attribute for Lights"
+          "map_rpm": "Attribute for RPM",
+          "map_fuel": "Attribute for Fuel",
+          "map_oil": "Attribute for Oil",
+          "map_dtc": "Attribute for DTC",
+          "map_door_fl": "Attribute for Door Front Left",
+          "map_door_fr": "Attribute for Door Front Right",
+          "map_door_rl": "Attribute for Door Rear Left",
+          "map_door_rr": "Attribute for Door Rear Right",
+          "map_locked": "Attribute for Locked Status",
+          "map_windows": "Attribute for Window Status",
+          "map_handbrake": "Attribute for Handbrake",
+          "map_lights": "Attribute for Lights"
         }
       }
     }

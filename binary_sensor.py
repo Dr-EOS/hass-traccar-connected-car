@@ -38,8 +38,9 @@ BINARY_SENSORS: list[Fmc130BinarySensorDescription] = [
 ]
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    data = hass.data[DOMAIN][entry.entry_id]
-    coordinator = data["coordinator"]
+    """Set up binary sensor platform."""
+    runtime_data = entry.runtime_data
+    coordinator = runtime_data.coordinator
 
     devices = coordinator.data["devices"]
     positions = coordinator.data["positions"]

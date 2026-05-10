@@ -54,8 +54,9 @@ SENSORS: list[Fmc130SensorDescription] = [
 ]
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    data = hass.data[DOMAIN][entry.entry_id]
-    coordinator = data["coordinator"]
+    """Set up sensor platform."""
+    runtime_data = entry.runtime_data
+    coordinator = runtime_data.coordinator
 
     devices = coordinator.data["devices"]
     positions = coordinator.data["positions"]
@@ -87,7 +88,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     entities = []
 
     for dev in devices:
-        # Check if we have data for this device
         if dev["id"] not in positions:
             continue
 
@@ -95,7 +95,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
             entities.append(Fmc130Sensor(coordinator, dev, desc))
         
         # Add Log Sensor for each device
-        entities.append(Fmc130LogSensor(coordinator, dev, data.get("server")))
+        entities.append(Fmc130LogSensor(coordinator, dev, runtime_data.server))
 
     async_add_entities(entities)
 
@@ -146,8 +146,6 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         self._device = device
         self.entity_description = description
         self._attr_unique_id = f"{DOMAIN}_{device['id']}_{description.key}"
-        # No need to set _attr_name or _attr_native_unit_of_measurement manually 
-        # as SensorEntity handles it via entity_description
 
     @property
     def device_info(self):
@@ -171,7 +169,6 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         attrs = pos.get("attributes", {})
         raw = attrs.get(self.entity_description.key)
 
-        # Fallback for speed
         if raw is None and self.entity_description.key == "speed":
             raw = pos.get("speed")
 

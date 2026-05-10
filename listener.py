@@ -7,6 +7,7 @@ import struct
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
+from .const import TLS_MODE_NONE, TLS_MODE_HA, TLS_MODE_CUSTOM
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,7 +30,6 @@ class TeltonikaProtocol(asyncio.Protocol):
         self.buffer.extend(data)
         
         if self.imei is None:
-            # First packet should be IMEI (prefixed with 2 bytes length? No, usually raw 15 digits)
             # Standard Teltonika: 2 bytes length + IMEI
             if len(self.buffer) < 2:
                 return
@@ -38,7 +38,13 @@ class TeltonikaProtocol(asyncio.Protocol):
             if len(self.buffer) < 2 + imei_len:
                 return
             
-            self.imei = self.buffer[2:2+imei_len].decode("ascii")
+            try:
+                self.imei = self.buffer[2:2+imei_len].decode("ascii")
+            except UnicodeDecodeError:
+                _LOGGER.error("Invalid IMEI received from %s", self._peername)
+                self.transport.close()
+                return
+
             self.buffer = self.buffer[2+imei_len:]
             
             _LOGGER.info("Device connected with IMEI: %s", self.imei)
@@ -49,9 +55,7 @@ class TeltonikaProtocol(asyncio.Protocol):
         else:
             # Parse data packets
             while len(self.buffer) >= 12: # Min header length
-                # Preamble 4x00
                 if self.buffer[:4] != b"\x00\x00\x00\x00":
-                    # Desync, find next preamble or close
                     idx = self.buffer.find(b"\x00\x00\x00\x00")
                     if idx == -1:
                         self.buffer.clear()
@@ -65,9 +69,7 @@ class TeltonikaProtocol(asyncio.Protocol):
                 
                 # We have a full packet
                 packet = self.buffer[8:8+data_len]
-                crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
-                
-                # TODO: Validate CRC
+                # crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
                 
                 num_records = self._parse_records(packet)
                 
@@ -79,7 +81,7 @@ class TeltonikaProtocol(asyncio.Protocol):
 
     def _parse_records(self, data: bytes) -> int:
         """Parse Codec 8/8E records."""
-        if not data:
+        if len(data) < 2:
             return 0
             
         codec_id = data[0]
@@ -87,23 +89,83 @@ class TeltonikaProtocol(asyncio.Protocol):
         
         _LOGGER.debug("Received %d records from %s (Codec 0x%02X)", num_records, self.imei, codec_id)
         
-        # Mapping for FMC130 Teltonika IO IDs
-        # 1: Digital Input 1 (Ignition)
-        # 2: Digital Input 2
-        # 239: Ignition (Alternative)
-        # 240: Motion
-        # 66: External Voltage (Power)
+        # Simplified parser for the last record in the packet
+        # In a production environment, we'd loop through all records.
+        # Here we take the last one as the most recent state.
         
-        # This is a simplified extraction for the specific FMC130 entities
-        # A full implementation would iterate through all IO elements
-        extracted_data = {}
-        
+        offset = 2
+        last_extracted_data = {}
+
+        for _ in range(num_records):
+            if len(data) < offset + 15: # Min record size (Timestamp + Priority + GPS)
+                break
+            
+            # Timestamp (8), Priority (1)
+            # gps_time = struct.unpack(">Q", data[offset:offset+8])[0]
+            offset += 9
+            
+            # GPS Data
+            lon = struct.unpack(">i", data[offset:offset+4])[0] / 10000000.0
+            lat = struct.unpack(">i", data[offset+4:offset+8])[0] / 10000000.0
+            alt = struct.unpack(">H", data[offset+8:offset+10])[0]
+            ang = struct.unpack(">H", data[offset+10:offset+12])[0]
+            sat = data[offset+12]
+            spd = struct.unpack(">H", data[offset+13:offset+15])[0]
+            offset += 15
+            
+            last_extracted_data.update({
+                "longitude": lon,
+                "latitude": lat,
+                "altitude": alt,
+                "angle": ang,
+                "sat": sat,
+                "speed": spd,
+            })
+            
+            # IO Elements (Codec 8)
+            # Event ID (1 or 2 bytes depending on Codec)
+            if codec_id == 0x08:
+                offset += 1 # Event ID
+                
+                # N1 (1 byte), N2 (2 bytes), N4 (4 bytes), N8 (8 bytes)
+                for size in [1, 2, 4, 8]:
+                    n_elements = data[offset]
+                    offset += 1
+                    for _ in range(n_elements):
+                        io_id = data[offset]
+                        offset += 1
+                        if size == 1:
+                            val = data[offset]
+                        elif size == 2:
+                            val = struct.unpack(">H", data[offset:offset+2])[0]
+                        elif size == 4:
+                            val = struct.unpack(">I", data[offset:offset+4])[0]
+                        elif size == 8:
+                            val = struct.unpack(">Q", data[offset:offset+8])[0]
+                        
+                        # Map specific IOs to known names
+                        if io_id == 1: # Ignition
+                            last_extracted_data["ignition"] = bool(val)
+                        elif io_id == 240: # Motion
+                            last_extracted_data["motion"] = bool(val)
+                        elif io_id == 66: # External Voltage
+                            last_extracted_data["power"] = val / 1000.0
+                        else:
+                            last_extracted_data[f"io_{io_id}"] = val
+                            
+                        offset += size
+            
+            elif codec_id == 0x8E: # Codec 8 Extended
+                # More complex IDs, skipping for now
+                pass
+
         # Log to the server's event buffer
         self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec {codec_id})")
         
-        # Trigger update in HA with the extracted data
-        extracted_data["num_records"] = num_records
-        self.server.handle_data(self.imei, extracted_data)
+        # Trigger update in HA with the last record's data
+        if last_extracted_data:
+            last_extracted_data["num_records"] = num_records
+            self.server.handle_data(self.imei, last_extracted_data)
         
         return num_records
 
@@ -148,16 +210,34 @@ class TeltonikaServer:
     async def async_start(self, port: int, tls_config: dict | None = None) -> None:
         """Start the TCP/TLS server."""
         ssl_context = None
-        if tls_config and tls_config.get("enabled"):
-            ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        mode = tls_config.get("mode", TLS_MODE_NONE)
+        
+        if mode != TLS_MODE_NONE:
+            cert_file = None
+            key_file = None
+            
+            if mode == TLS_MODE_HA:
+                http_conf = self.hass.config.as_dict().get("http", {})
+                cert_file = http_conf.get("ssl_certificate")
+                key_file = http_conf.get("ssl_key")
+                
+                if not cert_file or not key_file:
+                    _LOGGER.error("Home Assistant SSL certificates not found in 'http' configuration")
+                    return
+            elif mode == TLS_MODE_CUSTOM:
+                cert_file = tls_config.get("cert")
+                key_file = tls_config.get("key")
+                
+            if not cert_file or not key_file:
+                _LOGGER.error("SSL mode %s requested but paths missing", mode)
+                return
+
             try:
-                ssl_context.load_cert_chain(
-                    tls_config["cert"],
-                    tls_config["key"]
-                )
-                _LOGGER.info("TLS enabled for Teltonika listener on port %d", port)
+                ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+                ssl_context.load_cert_chain(cert_file, key_file)
+                _LOGGER.info("TLS enabled (%s) for Teltonika listener on port %d", mode, port)
             except Exception as err:
-                _LOGGER.error("Failed to load SSL certificates: %s", err)
+                _LOGGER.error("Failed to load SSL certificates (%s): %s", mode, err)
                 return
 
         loop = asyncio.get_running_loop()

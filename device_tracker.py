@@ -1,4 +1,4 @@
-"""Device tracker platform for FMC130 Traccar."""
+"""Device tracker platform for FMC130."""
 from __future__ import annotations
 
 from typing import Any
@@ -9,13 +9,13 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import Fmc130TraccarConfigEntry
+from . import Fmc130ConfigEntry
 from .const import DOMAIN
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: Fmc130TraccarConfigEntry,
+    entry: Fmc130ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the FMC130 device trackers."""
@@ -46,11 +46,14 @@ class Fmc130DeviceTracker(CoordinatorEntity, TrackerEntity):
         self._device = device
         self._attr_unique_id = f"{DOMAIN}_{device['id']}_tracker"
 
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, str(device["id"]))},
-            name=device["name"],
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return device info."""
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._device["id"])},
+            name=self._device["name"],
             manufacturer="Teltonika",
-            model=device.get("model", "FMC130"),
+            model=self._device.get("model", "FMC130"),
         )
 
     @property

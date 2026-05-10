@@ -11,20 +11,16 @@ from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
     DOMAIN,
-    CONF_HOST,
-    CONF_PORT,
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    CONF_USE_SSL,
-    CONF_TOKEN,
-    CONF_VERIFY_SSL,
+    CONF_IMEI,
+    CONF_DEVICE_NAME,
     CONF_LISTENER_PORT,
-    CONF_TLS_ENABLED,
+    CONF_TLS_MODE,
     CONF_SSL_CERT,
     CONF_SSL_KEY,
-    DEFAULT_PORT,
+    TLS_MODE_NONE,
+    TLS_MODE_HA,
+    TLS_MODE_CUSTOM,
     DEFAULT_LISTENER_PORT,
-    DEFAULT_USE_SSL,
     CONF_MAPPING_RPM,
     CONF_MAPPING_FUEL,
     CONF_MAPPING_OIL,
@@ -39,7 +35,6 @@ from .const import (
     CONF_MAPPING_LIGHTS,
     DEFAULT_MAPPINGS,
 )
-from .api import TraccarClient, TraccarApiError
 
 from homeassistant.helpers import selector
 
@@ -47,20 +42,19 @@ _LOGGER = logging.getLogger(__name__)
 
 USER_DATA_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_HOST): str,
-        vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-        vol.Optional(CONF_USERNAME): str,
-        vol.Optional(CONF_PASSWORD): selector.TextSelector(
-            selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
+        vol.Required(CONF_DEVICE_NAME): str,
+        vol.Required(CONF_IMEI): str,
+        vol.Required(CONF_LISTENER_PORT, default=DEFAULT_LISTENER_PORT): int,
+        vol.Required(CONF_TLS_MODE, default=TLS_MODE_HA): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(value=TLS_MODE_NONE, label="Disabled (Plain TCP)"),
+                    selector.SelectOptionDict(value=TLS_MODE_HA, label="Use Home Assistant Certificates"),
+                    selector.SelectOptionDict(value=TLS_MODE_CUSTOM, label="Use Custom Certificates"),
+                ],
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
         ),
-        vol.Optional(CONF_TOKEN): selector.TextSelector(
-            selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD)
-        ),
-        vol.Required(CONF_USE_SSL, default=DEFAULT_USE_SSL): bool,
-        vol.Required(CONF_VERIFY_SSL, default=True): bool,
-        vol.Required("enable_direct_listener", default=False): bool,
-        vol.Optional(CONF_LISTENER_PORT, default=DEFAULT_LISTENER_PORT): int,
-        vol.Optional(CONF_TLS_ENABLED, default=False): bool,
         vol.Optional(CONF_SSL_CERT): str,
         vol.Optional(CONF_SSL_KEY): str,
     }
@@ -91,30 +85,15 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            if not user_input.get(CONF_TOKEN) and not (user_input.get(CONF_USERNAME) and user_input.get(CONF_PASSWORD)):
-                errors["base"] = "missing_auth"
+            # Basic validation
+            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) < 10:
+                errors[CONF_IMEI] = "invalid_imei"
             
             if not errors:
-                from homeassistant.helpers.aiohttp_client import async_get_clientsession
-                session = async_get_clientsession(self.hass)
-                client = TraccarClient(
-                    user_input[CONF_HOST],
-                    user_input[CONF_PORT],
-                    user_input.get(CONF_USERNAME),
-                    user_input.get(CONF_PASSWORD),
-                    user_input[CONF_USE_SSL],
-                    user_input.get(CONF_TOKEN),
-                    session=session,
-                    verify_ssl=user_input.get(CONF_VERIFY_SSL, True),
+                return self.async_create_entry(
+                    title=f"Teltonika {user_input[CONF_DEVICE_NAME]}", 
+                    data=user_input
                 )
-                try:
-                    await client.get_devices()
-                    return self.async_create_entry(title=f"FMC130 {user_input[CONF_HOST]}", data=user_input)
-                except TraccarApiError:
-                    errors["base"] = "cannot_connect"
-                except Exception:
-                    _LOGGER.exception("Unexpected exception")
-                    errors["base"] = "unknown"
 
         return self.async_show_form(
             step_id="user", data_schema=USER_DATA_SCHEMA, errors=errors

@@ -1,18 +1,19 @@
 DOMAIN = "fmc130_traccar"
 
-CONF_HOST = "host"
-CONF_PORT = "port"
-CONF_USERNAME = "username"
-CONF_PASSWORD = "password"
-CONF_USE_SSL = "use_ssl"
-CONF_TOKEN = "token"
-CONF_VERIFY_SSL = "verify_ssl"
+# Device Config
+CONF_IMEI = "imei"
+CONF_DEVICE_NAME = "device_name"
 
 # Direct Listener Config
 CONF_LISTENER_PORT = "listener_port"
 CONF_TLS_ENABLED = "tls_enabled"
+CONF_TLS_MODE = "tls_mode"
 CONF_SSL_CERT = "ssl_cert"
 CONF_SSL_KEY = "ssl_key"
+
+TLS_MODE_NONE = "none"
+TLS_MODE_HA = "home_assistant"
+TLS_MODE_CUSTOM = "custom"
 
 DEFAULT_PORT = 8082
 DEFAULT_LISTENER_PORT = 5027
