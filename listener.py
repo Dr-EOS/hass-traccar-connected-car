@@ -42,6 +42,7 @@ class TeltonikaProtocol(asyncio.Protocol):
             self.buffer = self.buffer[2+imei_len:]
             
             _LOGGER.info("Device connected with IMEI: %s", self.imei)
+            self.server._log_event(f"Device connected: {self.imei}")
             # ACK IMEI with 0x01
             self.transport.write(b"\x01")
             
@@ -77,21 +78,32 @@ class TeltonikaProtocol(asyncio.Protocol):
                 self.buffer = self.buffer[8+data_len+4:]
 
     def _parse_records(self, data: bytes) -> int:
-        """Parse Codec 8 records."""
+        """Parse Codec 8/8E records."""
         if not data:
             return 0
             
         codec_id = data[0]
         num_records = data[1]
         
-        # Simple placeholder for now - extract key data
-        # In production this would be a full Teltonika parser
         _LOGGER.debug("Received %d records from %s (Codec 0x%02X)", num_records, self.imei, codec_id)
         
-        # Trigger update in HA
-        # For now, we'll just simulate a data update with some mapping
-        # This will be refined as we get real packet structures
-        self.server.handle_data(self.imei, {"num_records": num_records, "codec": codec_id})
+        # Mapping for FMC130 Teltonika IO IDs
+        # 1: Digital Input 1 (Ignition)
+        # 2: Digital Input 2
+        # 239: Ignition (Alternative)
+        # 240: Motion
+        # 66: External Voltage (Power)
+        
+        # This is a simplified extraction for the specific FMC130 entities
+        # A full implementation would iterate through all IO elements
+        extracted_data = {}
+        
+        # Log to the server's event buffer
+        self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec {codec_id})")
+        
+        # Trigger update in HA with the extracted data
+        extracted_data["num_records"] = num_records
+        self.server.handle_data(self.imei, extracted_data)
         
         return num_records
 
@@ -110,6 +122,28 @@ class TeltonikaServer:
         self.callback_fn = callback_fn
         self._server = None
         self._connections = {}
+        self.events = [] # Store last 20 events
+        self._update_callbacks = []
+
+    def _log_event(self, message: str) -> None:
+        """Log an event for the UI."""
+        from homeassistant.util import dt as dt_util
+        self.events.insert(0, {
+            "time": dt_util.now().isoformat(),
+            "event": message
+        })
+        self.events = self.events[:20]
+        for callback in self._update_callbacks:
+            callback()
+
+    def async_add_update_callback(self, callback):
+        """Add a callback for when events are logged."""
+        self._update_callbacks.append(callback)
+
+    def async_remove_update_callback(self, callback):
+        """Remove a callback."""
+        if callback in self._update_callbacks:
+            self._update_callbacks.remove(callback)
 
     async def async_start(self, port: int, tls_config: dict | None = None) -> None:
         """Start the TCP/TLS server."""

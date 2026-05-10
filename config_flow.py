@@ -58,7 +58,6 @@ USER_DATA_SCHEMA = vol.Schema(
         ),
         vol.Required(CONF_USE_SSL, default=DEFAULT_USE_SSL): bool,
         vol.Required(CONF_VERIFY_SSL, default=True): bool,
-        vol.Separator(),
         vol.Required("enable_direct_listener", default=False): bool,
         vol.Optional(CONF_LISTENER_PORT, default=DEFAULT_LISTENER_PORT): int,
         vol.Optional(CONF_TLS_ENABLED, default=False): bool,
@@ -93,7 +92,7 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             if not user_input.get(CONF_TOKEN) and not (user_input.get(CONF_USERNAME) and user_input.get(CONF_PASSWORD)):
-                 errors["base"] = "missing_auth"
+                errors["base"] = "missing_auth"
             
             if not errors:
                 from homeassistant.helpers.aiohttp_client import async_get_clientsession
