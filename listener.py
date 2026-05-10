@@ -58,7 +58,8 @@ class TeltonikaProtocol(asyncio.Protocol):
                 if self.buffer[:4] != b"\x00\x00\x00\x00":
                     idx = self.buffer.find(b"\x00\x00\x00\x00")
                     if idx == -1:
-                        self.buffer.clear()
+                        # Keep last 3 bytes to avoid splitting sync sequence
+                        self.buffer = self.buffer[-3:]
                         return
                     self.buffer = self.buffer[idx:]
                     continue
@@ -69,7 +70,7 @@ class TeltonikaProtocol(asyncio.Protocol):
                 
                 # We have a full packet
                 packet = self.buffer[8:8+data_len]
-                # crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
+                # TODO: Verify CRC here if needed
                 
                 num_records = self._parse_records(packet)
                 
@@ -88,10 +89,6 @@ class TeltonikaProtocol(asyncio.Protocol):
         num_records = data[1]
         
         _LOGGER.debug("Received %d records from %s (Codec 0x%02X)", num_records, self.imei, codec_id)
-        
-        # Simplified parser for the last record in the packet
-        # In a production environment, we'd loop through all records.
-        # Here we take the last one as the most recent state.
         
         offset = 2
         last_extracted_data = {}
@@ -122,12 +119,9 @@ class TeltonikaProtocol(asyncio.Protocol):
                 "speed": spd,
             })
             
-            # IO Elements (Codec 8)
-            # Event ID (1 or 2 bytes depending on Codec)
+            # IO Elements
             if codec_id == 0x08:
-                offset += 1 # Event ID
-                
-                # N1 (1 byte), N2 (2 bytes), N4 (4 bytes), N8 (8 bytes)
+                offset += 1 # Event ID (1 byte)
                 for size in [1, 2, 4, 8]:
                     n_elements = data[offset]
                     offset += 1
@@ -143,21 +137,28 @@ class TeltonikaProtocol(asyncio.Protocol):
                         elif size == 8:
                             val = struct.unpack(">Q", data[offset:offset+8])[0]
                         
-                        # Map specific IOs to known names
-                        if io_id == 1: # Ignition
-                            last_extracted_data["ignition"] = bool(val)
-                        elif io_id == 240: # Motion
-                            last_extracted_data["motion"] = bool(val)
-                        elif io_id == 66: # External Voltage
-                            last_extracted_data["power"] = val / 1000.0
-                        else:
-                            last_extracted_data[f"io_{io_id}"] = val
-                            
+                        self._map_io(last_extracted_data, io_id, val)
                         offset += size
             
             elif codec_id == 0x8E: # Codec 8 Extended
-                # More complex IDs, skipping for now
-                pass
+                offset += 2 # Event ID (2 bytes)
+                for size in [1, 2, 4, 8]:
+                    n_elements = struct.unpack(">H", data[offset:offset+2])[0]
+                    offset += 2
+                    for _ in range(n_elements):
+                        io_id = struct.unpack(">H", data[offset:offset+2])[0]
+                        offset += 2
+                        if size == 1:
+                            val = data[offset]
+                        elif size == 2:
+                            val = struct.unpack(">H", data[offset:offset+2])[0]
+                        elif size == 4:
+                            val = struct.unpack(">I", data[offset:offset+4])[0]
+                        elif size == 8:
+                            val = struct.unpack(">Q", data[offset:offset+8])[0]
+                        
+                        self._map_io(last_extracted_data, io_id, val)
+                        offset += size
 
         # Log to the server's event buffer
         self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec {codec_id})")
@@ -169,11 +170,39 @@ class TeltonikaProtocol(asyncio.Protocol):
         
         return num_records
 
+    def _map_io(self, data: dict, io_id: int, val: int) -> None:
+        """Map IO ID to named attribute or generic key."""
+        # Common Teltonika IO IDs (FMC130)
+        if io_id == 1: # Ignition
+            data["ignition"] = bool(val)
+        elif io_id == 240: # Motion
+            data["motion"] = bool(val)
+        elif io_id == 66: # External Voltage
+            data["power"] = val / 1000.0
+        elif io_id == 67: # Battery Voltage
+            data["battery"] = val / 1000.0
+        elif io_id == 113: # Battery Level (%)
+            data["batteryLevel"] = val
+        elif io_id == 24: # Speed (GNSS)
+            data["speed"] = val
+        elif io_id == 239: # Ignition (Alternative)
+            data["ignition"] = bool(val)
+        elif io_id == 16: # Odometer
+            data["odometer"] = val
+        elif io_id == 85: # RPM
+            data["rpm"] = val
+        elif io_id == 83: # Fuel Level
+            data["fuel"] = val
+        else:
+            data[f"io_{io_id}"] = val
+
     def connection_lost(self, exc: Exception | None) -> None:
         if exc:
             _LOGGER.error("Connection lost for %s: %s", self.imei, exc)
+            self.server._log_event(f"Error for {self.imei}: {exc}")
         else:
             _LOGGER.debug("Connection closed for %s", self.imei)
+            self.server._log_event(f"Disconnected: {self.imei}")
         self.server.handle_disconnect(self.imei)
 
 class TeltonikaServer:

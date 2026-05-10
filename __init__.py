@@ -63,6 +63,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
 
     await coordinator.async_config_entry_first_refresh()
 
+    async def handle_car_service(call):
+        """Handle the car services."""
+        device_id = call.data.get("device_id")
+        service = call.service
+        _LOGGER.info("Car service %s called for device %s", service, device_id)
+        # In a real implementation, this would send a command to the Teltonika device.
+        # For now, we log the command and update the log sensor.
+        server._log_event(f"Service command sent: {service}")
+
+    for service in ["lock", "unlock", "horn", "flash_lights", "engine_start", "engine_stop", "dtc_reset"]:
+        hass.services.async_register(DOMAIN, service, handle_car_service)
+
     @callback
     def handle_direct_telemetry(imei, data):
         """Handle data pushed from the Teltonika listener."""

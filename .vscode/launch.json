@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attach to Home Assistant (FMC130)",
+            "type": "python",
+            "request": "attach",
+            "connect": {
+                "host": "192.168.178.115",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}",
+                    "remoteRoot": "/config/custom_components/fmc130_traccar"
+                }
+            ],
+            "justMyCode": true
+        }
+    ]
+}
