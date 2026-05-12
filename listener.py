@@ -352,7 +352,10 @@ class TeltonikaServer:
 
             try:
                 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-                ssl_context.load_cert_chain(cert_file, key_file)
+                # Load certificates in executor to avoid blocking event loop
+                await self.hass.async_add_executor_job(
+                    ssl_context.load_cert_chain, cert_file, key_file
+                )
                 _LOGGER.info("TLS enabled (%s) for Teltonika listener on port %d", mode, port)
             except Exception as err:
                 _LOGGER.error("Failed to load SSL certificates (%s): %s", mode, err)
