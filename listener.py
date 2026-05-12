@@ -336,9 +336,8 @@ class TeltonikaServer:
             key_file = None
             
             if mode == TLS_MODE_HA:
-                http_conf = self.hass.config.as_dict().get("http", {})
-                cert_file = http_conf.get("ssl_certificate")
-                key_file = http_conf.get("ssl_key")
+                cert_file = getattr(self.hass.http, "ssl_certificate", None)
+                key_file = getattr(self.hass.http, "ssl_key", None)
                 
                 if not cert_file or not key_file:
                     _LOGGER.error("Home Assistant SSL certificates not found in 'http' configuration")
