@@ -11,6 +11,18 @@ from .const import TLS_MODE_NONE, TLS_MODE_HA, TLS_MODE_CUSTOM
 
 _LOGGER = logging.getLogger(__name__)
 
+def crc16(data: bytes) -> int:
+    """CRC-16-IBM (0xA001) implementation."""
+    crc = 0x0000
+    for byte in data:
+        crc ^= byte
+        for _ in range(8):
+            if crc & 0x0001:
+                crc = (crc >> 1) ^ 0xA001
+            else:
+                crc >>= 1
+    return crc
+
 class TeltonikaProtocol(asyncio.Protocol):
     """Protocol for Teltonika FMC130 Codec 8/8E."""
 
@@ -48,13 +60,14 @@ class TeltonikaProtocol(asyncio.Protocol):
             self.buffer = self.buffer[2+imei_len:]
             
             _LOGGER.info("Device connected with IMEI: %s", self.imei)
+            self.server._connections[self.imei] = self
             self.server._log_event(f"Device connected: {self.imei}")
             # ACK IMEI with 0x01
             self.transport.write(b"\x01")
             
         else:
             # Parse data packets
-            while len(self.buffer) >= 12: # Min header length
+            while len(self.buffer) >= 12: # Min header length (Preamble + Length)
                 if self.buffer[:4] != b"\x00\x00\x00\x00":
                     idx = self.buffer.find(b"\x00\x00\x00\x00")
                     if idx == -1:
@@ -65,24 +78,35 @@ class TeltonikaProtocol(asyncio.Protocol):
                     continue
                 
                 data_len = struct.unpack(">I", self.buffer[4:8])[0]
+                
+                # Sanity check for data length
+                if data_len > 2048:
+                    _LOGGER.warning("Packet length too large (%d), clearing buffer", data_len)
+                    self.buffer.clear()
+                    return
+
                 if len(self.buffer) < 8 + data_len + 4: # Header + Data + CRC
                     return
                 
                 # We have a full packet
                 packet = self.buffer[8:8+data_len]
-                # TODO: Verify CRC here if needed
+                # TODO: Verify CRC here if needed (CRC-16-IBM)
                 
-                num_records = self._parse_records(packet)
-                
-                # ACK with number of records (4 bytes)
-                self.transport.write(struct.pack(">I", num_records))
+                try:
+                    num_records = self._parse_records(packet)
+                    # ACK with number of records (4 bytes)
+                    self.transport.write(struct.pack(">I", num_records))
+                except Exception as err:
+                    _LOGGER.error("Error parsing Teltonika packet from %s: %s", self.imei, err)
+                    self.transport.close()
+                    return
                 
                 # Move buffer
                 self.buffer = self.buffer[8+data_len+4:]
 
     def _parse_records(self, data: bytes) -> int:
         """Parse Codec 8/8E records."""
-        if len(data) < 2:
+        if len(data) < 3: # Codec(1) + NumRec(1) + NumRec2(1)
             return 0
             
         codec_id = data[0]
@@ -94,7 +118,9 @@ class TeltonikaProtocol(asyncio.Protocol):
         last_extracted_data = {}
 
         for _ in range(num_records):
-            if len(data) < offset + 15: # Min record size (Timestamp + Priority + GPS)
+            # Each record has: Timestamp (8) + Priority (1) + GPS (15) = 24 bytes minimum
+            if len(data) < offset + 24:
+                _LOGGER.warning("Truncated record in packet from %s", self.imei)
                 break
             
             # Timestamp (8), Priority (1)
@@ -121,11 +147,14 @@ class TeltonikaProtocol(asyncio.Protocol):
             
             # IO Elements
             if codec_id == 0x08:
+                if len(data) < offset + 1: break
                 offset += 1 # Event ID (1 byte)
                 for size in [1, 2, 4, 8]:
+                    if len(data) < offset + 1: break
                     n_elements = data[offset]
                     offset += 1
                     for _ in range(n_elements):
+                        if len(data) < offset + 1 + size: break
                         io_id = data[offset]
                         offset += 1
                         if size == 1:
@@ -141,11 +170,14 @@ class TeltonikaProtocol(asyncio.Protocol):
                         offset += size
             
             elif codec_id == 0x8E: # Codec 8 Extended
+                if len(data) < offset + 2: break
                 offset += 2 # Event ID (2 bytes)
                 for size in [1, 2, 4, 8]:
+                    if len(data) < offset + 2: break
                     n_elements = struct.unpack(">H", data[offset:offset+2])[0]
                     offset += 2
                     for _ in range(n_elements):
+                        if len(data) < offset + 2 + size: break
                         io_id = struct.unpack(">H", data[offset:offset+2])[0]
                         offset += 2
                         if size == 1:
@@ -160,6 +192,11 @@ class TeltonikaProtocol(asyncio.Protocol):
                         self._map_io(last_extracted_data, io_id, val)
                         offset += size
 
+        # Final check: Num Records should match at the end
+        if len(data) > offset and data[offset] != num_records:
+            _LOGGER.warning("Num records mismatch at end of packet from %s: %d != %d", 
+                          self.imei, data[offset], num_records)
+
         # Log to the server's event buffer
         self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec {codec_id})")
         
@@ -172,7 +209,10 @@ class TeltonikaProtocol(asyncio.Protocol):
 
     def _map_io(self, data: dict, io_id: int, val: int) -> None:
         """Map IO ID to named attribute or generic key."""
-        # Common Teltonika IO IDs (FMC130)
+        # Always store the raw IO ID
+        data[io_id] = val
+        
+        # Common Teltonika IO IDs (FMC130) for standard logic
         if io_id == 1: # Ignition
             data["ignition"] = bool(val)
         elif io_id == 240: # Motion
@@ -185,16 +225,23 @@ class TeltonikaProtocol(asyncio.Protocol):
             data["batteryLevel"] = val
         elif io_id == 24: # Speed (GNSS)
             data["speed"] = val
-        elif io_id == 239: # Ignition (Alternative)
-            data["ignition"] = bool(val)
         elif io_id == 16: # Odometer
             data["odometer"] = val
-        elif io_id == 85: # RPM
-            data["rpm"] = val
-        elif io_id == 83: # Fuel Level
-            data["fuel"] = val
-        else:
-            data[f"io_{io_id}"] = val
+        elif io_id == 320: # CAN Doors
+            data["doorFrontLeft"] = bool(val & 0x01)
+            data["doorFrontRight"] = bool(val & 0x02)
+            data["doorRearLeft"] = bool(val & 0x04)
+            data["doorRearRight"] = bool(val & 0x08)
+            data["trunk"] = bool(val & 0x10)
+            data["bonnet"] = bool(val & 0x20)
+        elif io_id == 321: # CAN Security
+            data["locked"] = bool((val & 0x1E) == 0x1E)
+        elif io_id == 327: # Handbrake
+            data["handbrake"] = bool(val)
+        elif io_id == 331: # Lights
+            data["lights"] = bool(val)
+        elif io_id == 324: # Windows
+            data["windows"] = bool(val)
 
     def connection_lost(self, exc: Exception | None) -> None:
         if exc:
@@ -203,18 +250,51 @@ class TeltonikaProtocol(asyncio.Protocol):
         else:
             _LOGGER.debug("Connection closed for %s", self.imei)
             self.server._log_event(f"Disconnected: {self.imei}")
-        self.server.handle_disconnect(self.imei)
+        
+        if self.imei:
+            self.server.handle_disconnect(self.imei)
+
+    def send_command(self, command: str) -> bool:
+        """Send a GPRS command (Codec 12) to the device."""
+        if not self.transport:
+            return False
+            
+        cmd_bytes = command.encode("ascii")
+        # Codec 12: Preamble(4) + DataLen(4) + Codec(1) + Quantity(1) + Type(1) + CmdLen(4) + Cmd(X) + Quantity(1) + CRC(4)
+        data_len = 1 + 1 + 1 + 4 + len(cmd_bytes) + 1
+        
+        # Build the data part for CRC calculation
+        data_part = (
+            b"\x0c" +           # Codec 12
+            b"\x01" +           # Quantity
+            b"\x05" +           # Type (GPRS Command)
+            struct.pack(">I", len(cmd_bytes)) +
+            cmd_bytes +
+            b"\x01"             # Quantity 2
+        )
+        
+        crc_val = crc16(data_part)
+        
+        packet = (
+            b"\x00\x00\x00\x00" +
+            struct.pack(">I", data_len) +
+            data_part +
+            struct.pack(">I", crc_val)
+        )
+        self.transport.write(packet)
+        _LOGGER.debug("Sent command to %s: %s (CRC: 0x%04X)", self.imei, command, crc_val)
+        return True
 
 class TeltonikaServer:
     """Teltonika direct GPRS server."""
 
-    def __init__(self, hass: HomeAssistant, callback_fn) -> None:
+    def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
-        self.callback_fn = callback_fn
         self._server = None
         self._connections = {}
         self.events = [] # Store last 20 events
         self._update_callbacks = []
+        self._data_callbacks = {} # IMEI -> callback
 
     def _log_event(self, message: str) -> None:
         """Log an event for the UI."""
@@ -230,11 +310,21 @@ class TeltonikaServer:
     def async_add_update_callback(self, callback):
         """Add a callback for when events are logged."""
         self._update_callbacks.append(callback)
+        return lambda: self.async_remove_update_callback(callback)
 
     def async_remove_update_callback(self, callback):
         """Remove a callback."""
         if callback in self._update_callbacks:
             self._update_callbacks.remove(callback)
+
+    def async_add_data_callback(self, imei: str, callback):
+        """Add a callback for data from a specific IMEI."""
+        self._data_callbacks[imei] = callback
+        return lambda: self.async_remove_data_callback(imei)
+
+    def async_remove_data_callback(self, imei: str):
+        """Remove a callback."""
+        self._data_callbacks.pop(imei, None)
 
     async def async_start(self, port: int, tls_config: dict | None = None) -> None:
         """Start the TCP/TLS server."""
@@ -287,9 +377,17 @@ class TeltonikaServer:
 
     def handle_data(self, imei: str, data: dict) -> None:
         """Process received data."""
-        self.hass.add_job(self.callback_fn, imei, data)
+        if callback := self._data_callbacks.get(imei):
+            self.hass.add_job(callback, imei, data)
 
     def handle_disconnect(self, imei: str) -> None:
         """Handle device disconnect."""
         if imei in self._connections:
             del self._connections[imei]
+
+    def send_command(self, imei: str, command: str) -> bool:
+        """Send a command to a specific device."""
+        if imei not in self._connections:
+            _LOGGER.error("Device %s not connected", imei)
+            return False
+        return self._connections[imei].send_command(command)

@@ -63,18 +63,18 @@ USER_DATA_SCHEMA = vol.Schema(
 def OPTIONS_SCHEMA(options: dict[str, Any]) -> vol.Schema:
     return vol.Schema(
         {
-            vol.Optional(CONF_MAPPING_RPM, default=options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM])): str,
-            vol.Optional(CONF_MAPPING_FUEL, default=options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL])): str,
-            vol.Optional(CONF_MAPPING_OIL, default=options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL])): str,
-            vol.Optional(CONF_MAPPING_DTC, default=options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC])): str,
-            vol.Optional(CONF_MAPPING_DOOR_FL, default=options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])): str,
-            vol.Optional(CONF_MAPPING_DOOR_FR, default=options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR])): str,
-            vol.Optional(CONF_MAPPING_DOOR_RL, default=options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL])): str,
-            vol.Optional(CONF_MAPPING_DOOR_RR, default=options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR])): str,
-            vol.Optional(CONF_MAPPING_LOCKED, default=options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED])): str,
-            vol.Optional(CONF_MAPPING_WINDOWS, default=options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS])): str,
-            vol.Optional(CONF_MAPPING_HANDBRAKE, default=options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE])): str,
-            vol.Optional(CONF_MAPPING_LIGHTS, default=options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS])): str,
+            vol.Optional(CONF_MAPPING_RPM, default=options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM])): int,
+            vol.Optional(CONF_MAPPING_FUEL, default=options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL])): int,
+            vol.Optional(CONF_MAPPING_OIL, default=options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL])): int,
+            vol.Optional(CONF_MAPPING_DTC, default=options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC])): int,
+            vol.Optional(CONF_MAPPING_DOOR_FL, default=options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])): int,
+            vol.Optional(CONF_MAPPING_DOOR_FR, default=options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR])): int,
+            vol.Optional(CONF_MAPPING_DOOR_RL, default=options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL])): int,
+            vol.Optional(CONF_MAPPING_DOOR_RR, default=options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR])): int,
+            vol.Optional(CONF_MAPPING_LOCKED, default=options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED])): int,
+            vol.Optional(CONF_MAPPING_WINDOWS, default=options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS])): int,
+            vol.Optional(CONF_MAPPING_HANDBRAKE, default=options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE])): int,
+            vol.Optional(CONF_MAPPING_LIGHTS, default=options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS])): int,
         }
     )
 
@@ -102,13 +102,10 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
-        return Fmc130TraccarOptionsFlow(config_entry)
+        return Fmc130TraccarOptionsFlow()
 
 
 class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)

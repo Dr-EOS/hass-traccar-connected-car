@@ -33,7 +33,14 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     server._log_event("Push Update Test")
     
     # The callback is stored in the server instance
-    server.callback_fn("123456789012345", {"power": 13.8, "ignition": 1})
+    server.callback_fn("123456789012345", {
+        "power": 13.8, 
+        "ignition": 1,
+        "speed": 85,
+        "sat": 12,
+        "latitude": 52.5200,
+        "longitude": 13.4050
+    })
     
     await hass.async_block_till_done()
 
@@ -41,8 +48,20 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     state = hass.states.get("sensor.test_vehicle_power")
     assert state.state == "13.8"
     
+    state = hass.states.get("sensor.test_vehicle_speed")
+    assert state.state == "85.0"
+    
+    state = hass.states.get("sensor.test_vehicle_satellites")
+    assert state.state == "12.0"
+    
     binary_state = hass.states.get("binary_sensor.test_vehicle_ignition")
     assert binary_state.state == STATE_ON
+
+    # Check Device Tracker
+    tracker_state = hass.states.get("device_tracker.test_vehicle")
+    assert tracker_state is not None
+    assert tracker_state.attributes["latitude"] == 52.5200
+    assert tracker_state.attributes["longitude"] == 13.4050
 
     # Check Log Sensor
     log_state = hass.states.get("sensor.test_vehicle_logs")

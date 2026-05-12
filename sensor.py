@@ -22,6 +22,7 @@ from .const import (
 class Fmc130SensorDescription(SensorEntityDescription):
     """Class describing FMC130 sensor entities."""
     factor: float = 1.0
+    bitmask: int | None = None
 
 SENSORS: list[Fmc130SensorDescription] = [
     Fmc130SensorDescription(
@@ -112,6 +113,13 @@ class Fmc130LogSensor(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{device['id']}_logs"
         self._attr_name = "Logs"
 
+    async def async_added_to_hass(self) -> None:
+        """Register callbacks."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._server.async_add_update_callback(self.async_write_ha_state)
+        )
+
     @property
     def device_info(self):
         return DeviceInfo(
@@ -145,7 +153,12 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._device = device
         self.entity_description = description
-        self._attr_unique_id = f"{DOMAIN}_{device['id']}_{description.key}"
+        
+        # Unique ID based on IMEI, key (IO ID), and bitmask (if any)
+        uid = f"{DOMAIN}_{device['id']}_{description.key}"
+        if description.bitmask is not None:
+            uid += f"_{description.bitmask}"
+        self._attr_unique_id = uid
 
     @property
     def device_info(self):
@@ -169,8 +182,8 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         attrs = pos.get("attributes", {})
         raw = attrs.get(self.entity_description.key)
 
-        if raw is None and self.entity_description.key == "speed":
-            raw = pos.get("speed")
+        if raw is None:
+            raw = pos.get(self.entity_description.key)
 
         if raw is None:
             return None

@@ -23,6 +23,7 @@ from .const import (
 @dataclass(frozen=True, kw_only=True)
 class Fmc130BinarySensorDescription(BinarySensorEntityDescription):
     """Class describing FMC130 binary sensor entities."""
+    bitmask: int | None = None
 
 BINARY_SENSORS: list[Fmc130BinarySensorDescription] = [
     Fmc130BinarySensorDescription(
@@ -48,29 +49,41 @@ async def async_setup_entry(hass, entry, async_add_entities):
     options = entry.options
 
     dynamic_sensors = list(BINARY_SENSORS)
+    
+    # Doors (Bitmask on configured IO ID)
+    door_id = options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])
     dynamic_sensors.extend([
         Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL]),
+            key=door_id,
+            bitmask=0x01,
             name="Door Front Left",
             device_class=BinarySensorDeviceClass.DOOR
         ),
         Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR]),
+            key=door_id,
+            bitmask=0x02,
             name="Door Front Right",
             device_class=BinarySensorDeviceClass.DOOR
         ),
         Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL]),
+            key=door_id,
+            bitmask=0x04,
             name="Door Rear Left",
             device_class=BinarySensorDeviceClass.DOOR
         ),
         Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR]),
+            key=door_id,
+            bitmask=0x08,
             name="Door Rear Right",
             device_class=BinarySensorDeviceClass.DOOR
         ),
+    ])
+    
+    # Other bitmask/numeric sensors
+    dynamic_sensors.extend([
         Fmc130BinarySensorDescription(
             key=options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED]),
+            bitmask=0x1E,
             name="Locked",
             device_class=BinarySensorDeviceClass.LOCK
         ),
@@ -111,7 +124,12 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
         super().__init__(coordinator)
         self._device = device
         self.entity_description = description
-        self._attr_unique_id = f"{DOMAIN}_{device['id']}_{description.key}"
+        
+        # Unique ID based on IMEI, key (IO ID), and bitmask (if any)
+        uid = f"{DOMAIN}_{device['id']}_{description.key}"
+        if description.bitmask is not None:
+            uid += f"_{description.bitmask}"
+        self._attr_unique_id = uid
 
     @property
     def device_info(self):
@@ -134,8 +152,28 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
 
         attrs = pos.get("attributes", {})
         raw = attrs.get(self.entity_description.key)
+        
+        if raw is None:
+            raw = pos.get(self.entity_description.key)
 
         if raw is None:
             return None
 
-        return bool(raw)
+        # Apply bitmask if defined
+        if self.entity_description.bitmask is not None:
+            try:
+                # For "Locked" sensor, we check if all bits in mask are 1
+                if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
+                    val = (int(raw) & self.entity_description.bitmask) == self.entity_description.bitmask
+                else:
+                    val = bool(int(raw) & self.entity_description.bitmask)
+            except (ValueError, TypeError):
+                val = bool(raw)
+        else:
+            val = bool(raw)
+
+        # Home Assistant LOCK device class: ON = Unlocked, OFF = Locked
+        if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
+            return not val
+
+        return val

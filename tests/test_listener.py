@@ -10,6 +10,7 @@ def mock_server():
     """Mock TeltonikaServer."""
     server = MagicMock(spec=TeltonikaServer)
     server.events = []
+    server._connections = {}
     return server
 
 def test_protocol_handshake(mock_server):
