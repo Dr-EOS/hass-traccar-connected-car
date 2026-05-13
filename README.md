@@ -13,7 +13,8 @@ This integration offers a **Local Push** architecture, providing real-time telem
 - **Push-Only:** No external API polling for telemetry. Data is pushed directly from the device.
 - **Real-time:** Telemetry is updated immediately upon reception from the FMC130.
 - **Flexible Security:** Built-in support for **TLS (encrypted)** communication using Home Assistant's own certificates or custom ones.
-- **Completeness:** Full CAN bus support (doors, windows, fuel, RPM) and location tracking.
+- **Shared Listener:** Support for multiple vehicles on the same TCP port.
+- **Deep Control:** Functional GPRS command support (Codec 12) for vehicle control (locking/unlocking, engine start/stop).
 
 ### Data Flow:
 **Direct Mode:** Teltonika FMC130 → TCP/TLS (Port 5027) → HA Integration.
@@ -22,7 +23,7 @@ This integration offers a **Local Push** architecture, providing real-time telem
 
 ## 2. Direct Listener Configuration
 
-The integration acts as a Teltonika Protocol Server (Codec 8).
+The integration acts as a Teltonika Protocol Server (Codec 8/8E).
 
 ### Device Configuration:
 Configure your Teltonika device (via Configurator or SMS) with:
@@ -41,6 +42,11 @@ The **Direct Listener** is configured during setup:
     - **Home Assistant Certificates:** Uses the certificates configured in your `http` section of `configuration.yaml`.
     - **Custom Certificates:** Specify manual paths to your certificate and private key.
 
+### Advanced Mappings (Options Flow):
+You can customize the Teltonika IO ID mappings via the **Configure** button:
+- Map specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors.
+- Binary sensors for doors and security automatically use bitmask logic on the configured IO IDs.
+
 ---
 
 ## 3. Features & Sensors
@@ -48,23 +54,34 @@ The **Direct Listener** is configured during setup:
 The integration automatically creates entities based on the configured IMEI.
 
 ### Real-time Telemetry (Push)
-- **GPS Tracking:** Real-time position updates on the HA Map.
+- **GPS Tracking:** Real-time position updates with Altitude, Speed, and Satellites in state attributes for full map compatibility.
+- **Last Update:** A dedicated timestamp sensor showing the exact time of the last received telemetry.
 - **Ignition & Motion:** Instant status changes.
 - **Power & Satellites:** Diagnostic monitoring.
 
 ### CAN Bus Telemetry
 - **Engine:** RPM, Oil Level, Fuel Level (%).
-- **Doors & Windows:** Individual status for all four doors and windows.
+- **Doors & Windows:** Individual status for all four doors and windows (using bitmask logic).
 - **Security:** Locked/Unlocked status, Handbrake, and Light status.
-- **Logs:** Real-time protocol event log sensor.
+- **Logs:** Real-time protocol event log sensor showing connections and raw data info.
+
+### Command Support (Services)
+The integration registers domain-specific services to control the vehicle:
+- `fmc130_traccar.lock` / `fmc130_traccar.unlock`
+- `fmc130_traccar.engine_start` / `fmc130_traccar.engine_stop`
+- `fmc130_traccar.flash_lights` / `fmc130_traccar.horn`
+- `fmc130_traccar.dtc_reset`
+
+Commands are sent via Codec 12 with proper **CRC-16-IBM** verification.
 
 ---
 
-## 4. Security Notes
+## 4. Debugging & Troubleshooting
 
-- **TLS Termination:** It is highly recommended to use TLS when exposing the listener port to the internet.
-- **HA Certificate Integration:** By default, the integration tries to use the certificates already configured for Home Assistant, simplifying setup for secure connections.
-- **ACK Handling:** The server sends a proper 4-byte ACK for all records, ensuring the device correctly manages its internal data buffer.
+The integration provides extensive debug information:
+- **Raw Hex Dumps:** Every incoming packet is logged as hex in `DEBUG` mode.
+- **Unknown IO Tracking:** Any IO IDs sent by your hardware but not mapped are logged for easy identification.
+- **Blocking Protection:** High-latency tasks like SSL certificate loading are handled in background threads to ensure Home Assistant UI stability.
 
 ---
 

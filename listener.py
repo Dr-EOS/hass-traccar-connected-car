@@ -39,6 +39,7 @@ class TeltonikaProtocol(asyncio.Protocol):
         _LOGGER.debug("Connection from %s", self._peername)
 
     def data_received(self, data: bytes) -> None:
+        _LOGGER.debug("Incoming data from %s: %s", self._peername, data.hex())
         self.buffer.extend(data)
         
         if self.imei is None:
@@ -242,6 +243,8 @@ class TeltonikaProtocol(asyncio.Protocol):
             data["lights"] = bool(val)
         elif io_id == 324: # Windows
             data["windows"] = bool(val)
+        else:
+            _LOGGER.debug("Unknown Teltonika IO ID %d for %s: %s", io_id, self.imei, val)
 
     def connection_lost(self, exc: Exception | None) -> None:
         if exc:

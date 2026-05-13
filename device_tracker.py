@@ -90,3 +90,24 @@ class Fmc130DeviceTracker(CoordinatorEntity, TrackerEntity):
         if pos and "attributes" in pos and "batteryLevel" in pos["attributes"]:
             return pos["attributes"]["batteryLevel"]
         return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return device specific state attributes."""
+        if not self.coordinator.data or "positions" not in self.coordinator.data:
+            return {}
+        pos = self.coordinator.data["positions"].get(self._device["id"])
+        if not pos:
+            return {}
+
+        attrs = {
+            "altitude": pos.get("altitude"),
+            "speed": pos.get("speed"),
+            "satellites": pos.get("sat"),
+        }
+        
+        # Add all other attributes
+        if "attributes" in pos:
+            attrs.update(pos["attributes"])
+            
+        return attrs

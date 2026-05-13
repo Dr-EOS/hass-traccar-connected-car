@@ -3,8 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
+from homeassistant.components.sensor import (
+    SensorEntity,
+    SensorEntityDescription,
+    SensorDeviceClass,
+)
 from homeassistant.const import UnitOfLength, UnitOfSpeed, UnitOfElectricPotential
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -51,6 +56,11 @@ SENSORS: list[Fmc130SensorDescription] = [
         key="sat",
         name="Satellites",
         native_unit_of_measurement="sat",
+    ),
+    Fmc130SensorDescription(
+        key="fixTime",
+        name="Last Update",
+        device_class=SensorDeviceClass.TIMESTAMP,
     ),
 ]
 
@@ -170,7 +180,7 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def native_value(self) -> StateType:
+    def native_value(self) -> StateType | dt_util.dt.datetime:
         """Return the state of the sensor."""
         if not self.coordinator.data:
             return None
@@ -187,6 +197,12 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
 
         if raw is None:
             return None
+
+        if self.entity_description.device_class == SensorDeviceClass.TIMESTAMP:
+            try:
+                return dt_util.parse_datetime(str(raw))
+            except (ValueError, TypeError):
+                return None
 
         try:
             return raw * self.entity_description.factor
