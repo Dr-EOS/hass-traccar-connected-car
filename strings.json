@@ -9,7 +9,31 @@
           "device_name": "Friendly Name",
           "imei": "Device IMEI (15 digits)",
           "listener_port": "TCP Port",
-          "tls_mode": "Encryption (TLS)",
+          "tls_mode": "Encryption (TLS)"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Connection",
+        "description": "Update connection settings for your Teltonika device.",
+        "data": {
+          "device_name": "Friendly Name",
+          "imei": "Device IMEI (15 digits)",
+          "listener_port": "TCP Port",
+          "tls_mode": "Encryption (TLS)"
+        }
+      },
+      "tls": {
+        "title": "Custom TLS Configuration",
+        "description": "Provide paths to your custom SSL certificate and key files.",
+        "data": {
+          "ssl_cert": "SSL Certificate Path",
+          "ssl_key": "SSL Key Path"
+        }
+      },
+      "reconfigure_tls": {
+        "title": "Custom TLS Configuration",
+        "description": "Provide paths to your custom SSL certificate and key files.",
+        "data": {
           "ssl_cert": "SSL Certificate Path",
           "ssl_key": "SSL Key Path"
         }
@@ -26,6 +50,32 @@
   "options": {
     "step": {
       "init": {
+        "title": "Settings",
+        "description": "Choose which settings to configure.",
+        "menu_options": {
+          "connection": "Connection Settings",
+          "mapping": "Data Mapping"
+        }
+      },
+      "connection": {
+        "title": "Connection Settings",
+        "description": "Update connection settings for your Teltonika device.",
+        "data": {
+          "device_name": "Friendly Name",
+          "imei": "Device IMEI (15 digits)",
+          "listener_port": "TCP Port",
+          "tls_mode": "Encryption (TLS)"
+        }
+      },
+      "connection_tls": {
+        "title": "Custom TLS Configuration",
+        "description": "Provide paths to your custom SSL certificate and key files.",
+        "data": {
+          "ssl_cert": "SSL Certificate Path",
+          "ssl_key": "SSL Key Path"
+        }
+      },
+      "mapping": {
         "title": "Configure Data Mapping",
         "description": "Enter the IO IDs or attribute keys to map to Home Assistant entities.",
         "data": {
@@ -41,6 +91,78 @@
           "map_windows": "Attribute for Window Status",
           "map_handbrake": "Attribute for Handbrake",
           "map_lights": "Attribute for Lights"
+        }
+      }
+    }
+  },
+  "services": {
+    "lock": {
+      "name": "Lock",
+      "description": "Sends a lock command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
+        }
+      }
+    },
+    "unlock": {
+      "name": "Unlock",
+      "description": "Sends an unlock command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
+        }
+      }
+    },
+    "horn": {
+      "name": "Horn",
+      "description": "Sends a horn command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
+        }
+      }
+    },
+    "flash_lights": {
+      "name": "Flash Lights",
+      "description": "Sends a flash lights command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
+        }
+      }
+    },
+    "engine_start": {
+      "name": "Engine Start",
+      "description": "Sends an engine start command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
+        }
+      }
+    },
+    "engine_stop": {
+      "name": "Engine Stop",
+      "description": "Sends an engine stop command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
+        }
+      }
+    },
+    "dtc_reset": {
+      "name": "Reset DTC",
+      "description": "Sends a DTC reset command to the vehicle.",
+      "fields": {
+        "device_id": {
+          "name": "Device",
+          "description": "The Home Assistant device ID of the tracker."
         }
       }
     }

@@ -30,6 +30,7 @@ class Fmc130RuntimeData:
     """Runtime data for FMC130."""
     coordinator: DataUpdateCoordinator
     server: TeltonikaServer
+    port: int
 
 type Fmc130ConfigEntry = ConfigEntry[Fmc130RuntimeData]
 
@@ -113,6 +114,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     entry.runtime_data = Fmc130RuntimeData(
         coordinator=coordinator,
         server=server,
+        port=port,
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -195,7 +197,7 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     """Unload a config entry."""
-    port = entry.data.get(CONF_LISTENER_PORT, 5027)
+    port = entry.runtime_data.port
     
     if port in hass.data[DOMAIN]["servers"]:
         server_info = hass.data[DOMAIN]["servers"][port]
