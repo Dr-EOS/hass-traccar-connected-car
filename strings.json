@@ -9,7 +9,9 @@
           "device_name": "Friendly Name",
           "imei": "Device IMEI (15 digits)",
           "listener_port": "TCP Port",
-          "tls_mode": "Encryption (TLS)"
+          "tls_mode": "Encryption (TLS)",
+          "ssl_cert": "SSL Certificate Path",
+          "ssl_key": "SSL Key Path"
         }
       },
       "reconfigure": {
@@ -19,21 +21,7 @@
           "device_name": "Friendly Name",
           "imei": "Device IMEI (15 digits)",
           "listener_port": "TCP Port",
-          "tls_mode": "Encryption (TLS)"
-        }
-      },
-      "tls": {
-        "title": "Custom TLS Configuration",
-        "description": "Provide paths to your custom SSL certificate and key files.",
-        "data": {
-          "ssl_cert": "SSL Certificate Path",
-          "ssl_key": "SSL Key Path"
-        }
-      },
-      "reconfigure_tls": {
-        "title": "Custom TLS Configuration",
-        "description": "Provide paths to your custom SSL certificate and key files.",
-        "data": {
+          "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
           "ssl_key": "SSL Key Path"
         }
@@ -64,13 +52,7 @@
           "device_name": "Friendly Name",
           "imei": "Device IMEI (15 digits)",
           "listener_port": "TCP Port",
-          "tls_mode": "Encryption (TLS)"
-        }
-      },
-      "connection_tls": {
-        "title": "Custom TLS Configuration",
-        "description": "Provide paths to your custom SSL certificate and key files.",
-        "data": {
+          "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
           "ssl_key": "SSL Key Path"
         }
@@ -79,18 +61,18 @@
         "title": "Configure Data Mapping",
         "description": "Enter the IO IDs or attribute keys to map to Home Assistant entities.",
         "data": {
-          "map_rpm": "Attribute for RPM",
-          "map_fuel": "Attribute for Fuel",
-          "map_oil": "Attribute for Oil",
-          "map_dtc": "Attribute for DTC",
-          "map_door_fl": "Attribute for Door Front Left",
-          "map_door_fr": "Attribute for Door Front Right",
-          "map_door_rl": "Attribute for Door Rear Left",
-          "map_door_rr": "Attribute for Door Rear Right",
-          "map_locked": "Attribute for Locked Status",
-          "map_windows": "Attribute for Window Status",
-          "map_handbrake": "Attribute for Handbrake",
-          "map_lights": "Attribute for Lights"
+          "map_rpm": "Engine RPM",
+          "map_fuel": "Fuel Level",
+          "map_oil": "Oil Level",
+          "map_dtc": "Diagnostic Trouble Codes",
+          "map_door_fl": "Front Left Door",
+          "map_door_fr": "Front Right Door",
+          "map_door_rl": "Rear Left Door",
+          "map_door_rr": "Rear Right Door",
+          "map_locked": "Lock Status",
+          "map_windows": "Window Status",
+          "map_handbrake": "Handbrake Status",
+          "map_lights": "Lights Status"
         }
       }
     }
@@ -157,7 +139,7 @@
       }
     },
     "dtc_reset": {
-      "name": "Reset DTC",
+      "name": "Reset Diagnostic Codes",
       "description": "Sends a DTC reset command to the vehicle.",
       "fields": {
         "device_id": {

@@ -44,55 +44,41 @@ def get_user_data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     if defaults is None:
         defaults = {}
     
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_DEVICE_NAME, 
-                default=defaults.get(CONF_DEVICE_NAME, "")
-            ): selector.TextSelector(),
-            vol.Required(
-                CONF_IMEI, 
-                default=defaults.get(CONF_IMEI, "")
-            ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
-            vol.Required(
-                CONF_LISTENER_PORT, 
-                default=defaults.get(CONF_LISTENER_PORT, DEFAULT_LISTENER_PORT)
-            ): selector.NumberSelector(
-                selector.NumberSelectorConfig(min=1, max=65535, mode=selector.NumberSelectorMode.BOX)
-            ),
-            vol.Required(
-                CONF_TLS_MODE, 
-                default=defaults.get(CONF_TLS_MODE, TLS_MODE_HA)
-            ): selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(value=TLS_MODE_NONE, label="Disabled (Plain TCP)"),
-                        selector.SelectOptionDict(value=TLS_MODE_HA, label="Use Home Assistant Certificates"),
-                        selector.SelectOptionDict(value=TLS_MODE_CUSTOM, label="Use Custom Certificates"),
-                    ],
-                    mode=selector.SelectSelectorMode.DROPDOWN,
-                )
-            ),
-        }
-    )
+    schema = {
+        vol.Required(
+            CONF_DEVICE_NAME, 
+            default=defaults.get(CONF_DEVICE_NAME, "")
+        ): selector.TextSelector(),
+        vol.Required(
+            CONF_IMEI, 
+            default=defaults.get(CONF_IMEI, "")
+        ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
+        vol.Required(
+            CONF_LISTENER_PORT, 
+            default=defaults.get(CONF_LISTENER_PORT, DEFAULT_LISTENER_PORT)
+        ): selector.NumberSelector(
+            selector.NumberSelectorConfig(min=1, max=65535, mode=selector.NumberSelectorMode.BOX)
+        ),
+        vol.Required(
+            CONF_TLS_MODE, 
+            default=defaults.get(CONF_TLS_MODE, TLS_MODE_HA)
+        ): selector.SelectSelector(
+            selector.SelectSelectorConfig(
+                options=[
+                    selector.SelectOptionDict(value=TLS_MODE_NONE, label="Disabled (Plain TCP)"),
+                    selector.SelectOptionDict(value=TLS_MODE_HA, label="Use Home Assistant Certificates"),
+                    selector.SelectOptionDict(value=TLS_MODE_CUSTOM, label="Use Custom Certificates"),
+                ],
+                mode=selector.SelectSelectorMode.DROPDOWN,
+            )
+        ),
+    }
 
-def get_tls_data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
-    """Return the TLS data schema with optional defaults."""
-    if defaults is None:
-        defaults = {}
-    
-    return vol.Schema(
-        {
-            vol.Required(
-                CONF_SSL_CERT,
-                default=defaults.get(CONF_SSL_CERT, "")
-            ): selector.TextSelector(),
-            vol.Required(
-                CONF_SSL_KEY,
-                default=defaults.get(CONF_SSL_KEY, "")
-            ): selector.TextSelector(),
-        }
-    )
+    # Always include these, UI will handle visibility if supported or user just fills them
+    schema[vol.Optional(CONF_SSL_CERT, default=defaults.get(CONF_SSL_CERT, ""))] = selector.TextSelector()
+    schema[vol.Optional(CONF_SSL_KEY, default=defaults.get(CONF_SSL_KEY, ""))] = selector.TextSelector()
+
+    return vol.Schema(schema)
 
 class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
@@ -111,9 +97,6 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             if not errors:
                 self._user_data = user_input
-                if user_input[CONF_TLS_MODE] == TLS_MODE_CUSTOM:
-                    return await self.async_step_tls()
-                
                 await self.async_set_unique_id(user_input[CONF_IMEI])
                 self._abort_if_unique_id_configured()
                 return self.async_create_entry(
@@ -123,21 +106,6 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user", data_schema=get_user_data_schema(), errors=errors
-        )
-
-    async def async_step_tls(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle TLS custom step."""
-        if user_input is not None:
-            self._user_data.update(user_input)
-            await self.async_set_unique_id(self._user_data[CONF_IMEI])
-            self._abort_if_unique_id_configured()
-            return self.async_create_entry(
-                title=f"Teltonika {self._user_data[CONF_DEVICE_NAME]}", 
-                data=self._user_data
-            )
-
-        return self.async_show_form(
-            step_id="tls", data_schema=get_tls_data_schema(self._user_data)
         )
 
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -152,9 +120,6 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             
             if not errors:
                 self._user_data = user_input
-                if user_input[CONF_TLS_MODE] == TLS_MODE_CUSTOM:
-                    return await self.async_step_reconfigure_tls()
-                
                 if user_input[CONF_IMEI] != entry.unique_id:
                     await self.async_set_unique_id(user_input[CONF_IMEI])
                     self._abort_if_unique_id_configured()
@@ -170,34 +135,15 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reconfigure_tls(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle TLS custom step during reconfiguration."""
-        entry = self._get_reconfigure_entry()
-        if user_input is not None:
-            self._user_data.update(user_input)
-            if self._user_data[CONF_IMEI] != entry.unique_id:
-                await self.async_set_unique_id(self._user_data[CONF_IMEI])
-                self._abort_if_unique_id_configured()
-            
-            return self.async_update_reload_and_abort(
-                entry,
-                data_updates=self._user_data,
-            )
-
-        return self.async_show_form(
-            step_id="reconfigure_tls", data_schema=get_tls_data_schema(entry.data)
-        )
-
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
-        return Fmc130TraccarOptionsFlow(config_entry)
+        return Fmc130TraccarOptionsFlow()
 
 
 class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
         self._connection_data: dict[str, Any] = {}
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -217,9 +163,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
             
             if not errors:
                 self._connection_data = user_input
-                if user_input[CONF_TLS_MODE] == TLS_MODE_CUSTOM:
-                    return await self.async_step_connection_tls()
-                
                 # Update entry data and unique_id if needed
                 updates: dict[str, Any] = {
                     "data": {**self.config_entry.data, **self._connection_data}
@@ -238,21 +181,64 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
             errors=errors,
         )
 
-    async def async_step_connection_tls(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Manage custom TLS settings in options flow."""
+    async def async_step_mapping(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Manage data mapping."""
         if user_input is not None:
-            self._connection_data.update(user_input)
-            updates: dict[str, Any] = {
-                "data": {**self.config_entry.data, **self._connection_data}
-            }
-            if self._connection_data[CONF_IMEI] != self.config_entry.unique_id:
-                updates["unique_id"] = self._connection_data[CONF_IMEI]
-            
-            self.hass.config_entries.async_update_entry(
-                self.config_entry, **updates
-            )
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(title="", data=user_input)
 
+        options = self.config_entry.options
         return self.async_show_form(
-            step_id="connection_tls", data_schema=get_tls_data_schema(self.config_entry.data)
+            step_id="mapping",
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(
+                        CONF_MAPPING_RPM,
+                        default=options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_FUEL,
+                        default=options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_OIL,
+                        default=options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_DTC,
+                        default=options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_DOOR_FL,
+                        default=options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_DOOR_FR,
+                        default=options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_DOOR_RL,
+                        default=options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_DOOR_RR,
+                        default=options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_LOCKED,
+                        default=options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_WINDOWS,
+                        default=options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_HANDBRAKE,
+                        default=options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE]),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_LIGHTS,
+                        default=options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS]),
+                    ): selector.TextSelector(),
+                }
+            ),
         )
