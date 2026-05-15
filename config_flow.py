@@ -47,11 +47,11 @@ def get_user_data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     schema = {
         vol.Required(
             CONF_DEVICE_NAME, 
-            default=defaults.get(CONF_DEVICE_NAME, "")
+            default=str(defaults.get(CONF_DEVICE_NAME, ""))
         ): selector.TextSelector(),
         vol.Required(
             CONF_IMEI, 
-            default=defaults.get(CONF_IMEI, "")
+            default=str(defaults.get(CONF_IMEI, ""))
         ): selector.TextSelector(selector.TextSelectorConfig(type=selector.TextSelectorType.TEXT)),
         vol.Required(
             CONF_LISTENER_PORT, 
@@ -140,8 +140,9 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    @staticmethod
     @callback
-    def async_get_options_flow(self, config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return Fmc130TraccarOptionsFlow()
 
 
@@ -215,51 +216,51 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                 {
                     vol.Optional(
                         CONF_MAPPING_RPM,
-                        default=options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM]),
+                        default=str(options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_FUEL,
-                        default=options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL]),
+                        default=str(options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_OIL,
-                        default=options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL]),
+                        default=str(options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_DTC,
-                        default=options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC]),
+                        default=str(options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_DOOR_FL,
-                        default=options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL]),
+                        default=str(options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_DOOR_FR,
-                        default=options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR]),
+                        default=str(options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_DOOR_RL,
-                        default=options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL]),
+                        default=str(options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_DOOR_RR,
-                        default=options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR]),
+                        default=str(options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_LOCKED,
-                        default=options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED]),
+                        default=str(options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_WINDOWS,
-                        default=options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS]),
+                        default=str(options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_HANDBRAKE,
-                        default=options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE]),
+                        default=str(options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE])),
                     ): selector.TextSelector(),
                     vol.Optional(
                         CONF_MAPPING_LIGHTS,
-                        default=options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS]),
+                        default=str(options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS])),
                     ): selector.TextSelector(),
                 }
             ),
