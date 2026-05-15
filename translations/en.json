@@ -1,5 +1,4 @@
 {
-  "title": "Teltonika FMC130 Connected Car",
   "config": {
     "step": {
       "user": {
@@ -100,93 +99,6 @@
           "map_windows": "Window Status",
           "map_handbrake": "Handbrake Status",
           "map_lights": "Lights Status"
-        }
-      }
-    }
-  },
-  "selector": {
-    "tls_mode": {
-      "options": {
-        "none": "Disabled (Plain TCP)",
-        "home_assistant": "Use Home Assistant Certificates",
-        "custom": "Use Custom Certificates"
-      }
-    },
-    "section": {
-      "options": {
-        "connection": "Connection Settings",
-        "mapping": "Data Mapping"
-      }
-    }
-  },
-  "services": {
-    "lock": {
-      "name": "Lock",
-      "description": "Sends a lock command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "unlock": {
-      "name": "Unlock",
-      "description": "Sends an unlock command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "horn": {
-      "name": "Horn",
-      "description": "Sends a horn command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "flash_lights": {
-      "name": "Flash Lights",
-      "description": "Sends a flash lights command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "engine_start": {
-      "name": "Engine Start",
-      "description": "Sends an engine start command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "engine_stop": {
-      "name": "Engine Stop",
-      "description": "Sends an engine stop command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
-        }
-      }
-    },
-    "dtc_reset": {
-      "name": "Reset Diagnostic Codes",
-      "description": "Sends a DTC reset command to the vehicle.",
-      "fields": {
-        "device_id": {
-          "name": "Device",
-          "description": "The Home Assistant device ID of the tracker."
         }
       }
     }

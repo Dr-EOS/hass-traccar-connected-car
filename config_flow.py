@@ -70,13 +70,18 @@ def get_user_data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
                     selector.SelectOptionDict(value=TLS_MODE_CUSTOM, label="Use Custom Certificates"),
                 ],
                 mode=selector.SelectSelectorMode.DROPDOWN,
+                translation_key="tls_mode"
             )
         ),
+        vol.Optional(
+            CONF_SSL_CERT,
+            default=defaults.get(CONF_SSL_CERT, "")
+        ): selector.TextSelector(),
+        vol.Optional(
+            CONF_SSL_KEY,
+            default=defaults.get(CONF_SSL_KEY, "")
+        ): selector.TextSelector(),
     }
-
-    # Always include these, UI will handle visibility if supported or user just fills them
-    schema[vol.Optional(CONF_SSL_CERT, default=defaults.get(CONF_SSL_CERT, ""))] = selector.TextSelector()
-    schema[vol.Optional(CONF_SSL_KEY, default=defaults.get(CONF_SSL_KEY, ""))] = selector.TextSelector()
 
     return vol.Schema(schema)
 
@@ -135,9 +140,8 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    @staticmethod
     @callback
-    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+    def async_get_options_flow(self, config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
         return Fmc130TraccarOptionsFlow()
 
 
@@ -148,9 +152,27 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
-        return self.async_show_menu(
+        if user_input is not None:
+            if user_input["section"] == "connection":
+                return await self.async_step_connection()
+            return await self.async_step_mapping()
+
+        return self.async_show_form(
             step_id="init",
-            menu_options=["connection", "mapping"],
+            data_schema=vol.Schema(
+                {
+                    vol.Required("section", default="connection"): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=[
+                                selector.SelectOptionDict(value="connection", label="Connection Settings"),
+                                selector.SelectOptionDict(value="mapping", label="Data Mapping"),
+                            ],
+                            mode=selector.SelectSelectorMode.LIST,
+                            translation_key="section"
+                        )
+                    )
+                }
+            ),
         )
 
     async def async_step_connection(self, user_input: dict[str, Any] | None = None) -> FlowResult:
