@@ -39,6 +39,10 @@ class TeltonikaProtocol(asyncio.Protocol):
         _LOGGER.debug("Connection from %s", self._peername)
 
     def data_received(self, data: bytes) -> None:
+        if self.imei and self.server.is_debug(self.imei):
+            self.server._log_event(f"RAW DATA [{self.imei}]: {data.hex()}")
+            _LOGGER.info("RAW DATA [%s]: %s", self.imei, data.hex())
+        
         _LOGGER.debug("Incoming data from %s: %s", self._peername, data.hex())
         self.buffer.extend(data)
         
@@ -295,9 +299,18 @@ class TeltonikaServer:
         self.hass = hass
         self._server = None
         self._connections = {}
+        self._debug_modes = {} # IMEI -> bool
         self.events = [] # Store last 20 events
         self._update_callbacks = []
         self._data_callbacks = {} # IMEI -> callback
+
+    def set_debug(self, imei: str, enabled: bool) -> None:
+        """Set debug mode for an IMEI."""
+        self._debug_modes[imei] = enabled
+
+    def is_debug(self, imei: str) -> bool:
+        """Check if debug mode is enabled for an IMEI."""
+        return self._debug_modes.get(imei, False)
 
     def _log_event(self, message: str) -> None:
         """Log an event for the UI."""

@@ -22,6 +22,7 @@ from .const import (
     CONF_MAPPING_DTC,
     DEFAULT_MAPPINGS,
 )
+from .utils import parse_int_value
 
 @dataclass(frozen=True, kw_only=True)
 class Fmc130SensorDescription(SensorEntityDescription):
@@ -75,26 +76,22 @@ async def async_setup_entry(hass, entry, async_add_entities):
     options = entry.options
     
     dynamic_sensors = list(SENSORS)
-    dynamic_sensors.extend([
-        Fmc130SensorDescription(
-            key=options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM]),
-            name="RPM",
-            native_unit_of_measurement="rpm"
-        ),
-        Fmc130SensorDescription(
-            key=options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL]),
-            name="Fuel Level",
-            native_unit_of_measurement="%"
-        ),
-        Fmc130SensorDescription(
-            key=options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL]),
-            name="Oil Level"
-        ),
-        Fmc130SensorDescription(
-            key=options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC]),
-            name="DTC Codes"
-        )
-    ])
+    
+    mappings = [
+        (CONF_MAPPING_RPM, "RPM", "rpm"),
+        (CONF_MAPPING_FUEL, "Fuel Level", "%"),
+        (CONF_MAPPING_OIL, "Oil Level", None),
+        (CONF_MAPPING_DTC, "DTC Codes", None),
+    ]
+    
+    for map_key, name, unit in mappings:
+        io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
+        if io_id is not None:
+            dynamic_sensors.append(Fmc130SensorDescription(
+                key=io_id,
+                name=name,
+                native_unit_of_measurement=unit
+            ))
 
     entities = []
 

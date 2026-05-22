@@ -1,5 +1,17 @@
 # Release Notes: FMC130 Traccar Car Control
 
+## v1.2.0
+
+### Added Features
+- **Debug Mode**: Added a "Debug Mode" toggle in the configuration flow. When enabled, raw hex payloads are logged directly to the integration's log sensor in the Home Assistant UI.
+- **Advanced Data Mapping**: Users can now customize IO ID mappings and bitmasks for all sensors and binary sensors.
+- **Hex & Binary Support**: Mapping fields now support hex (e.g., `0x320`) and binary (e.g., `0b0001`) notation.
+- **Improved Validation**: IMEI input now requires exactly 15 digits.
+- **Local Push Excellence**: Reinforced the direct listener architecture, removing legacy Traccar server requirements.
+
+### Bug Fixes
+- **Hardcoded Bitmasks**: Removed hardcoded bitmasks for doors and security sensors in favor of dynamic user configuration.
+
 ## v1.1.0
 
 ### Added Features

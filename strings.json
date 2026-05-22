@@ -11,7 +11,8 @@
           "listener_port": "TCP Port",
           "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
-          "ssl_key": "SSL Key Path"
+          "ssl_key": "SSL Key Path",
+          "debug_mode": "Debug Mode"
         },
         "sections": {
           "tls_config": {
@@ -33,7 +34,8 @@
           "listener_port": "TCP Port",
           "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
-          "ssl_key": "SSL Key Path"
+          "ssl_key": "SSL Key Path",
+          "debug_mode": "Debug Mode"
         },
         "sections": {
           "tls_config": {
@@ -72,7 +74,8 @@
           "listener_port": "TCP Port",
           "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
-          "ssl_key": "SSL Key Path"
+          "ssl_key": "SSL Key Path",
+          "debug_mode": "Debug Mode"
         },
         "sections": {
           "tls_config": {
@@ -92,14 +95,22 @@
           "map_fuel": "Fuel Level",
           "map_oil": "Oil Level",
           "map_dtc": "Diagnostic Trouble Codes",
-          "map_door_fl": "Front Left Door",
-          "map_door_fr": "Front Right Door",
-          "map_door_rl": "Rear Left Door",
-          "map_door_rr": "Rear Right Door",
-          "map_locked": "Lock Status",
-          "map_windows": "Window Status",
-          "map_handbrake": "Handbrake Status",
-          "map_lights": "Lights Status"
+          "map_door_fl": "Front Left Door IO ID",
+          "mask_door_fl": "Front Left Door Bitmask",
+          "map_door_fr": "Front Right Door IO ID",
+          "mask_door_fr": "Front Right Door Bitmask",
+          "map_door_rl": "Rear Left Door IO ID",
+          "mask_door_rl": "Rear Left Door Bitmask",
+          "map_door_rr": "Rear Right Door IO ID",
+          "mask_door_rr": "Rear Right Door Bitmask",
+          "map_locked": "Lock Status IO ID",
+          "mask_locked": "Lock Status Bitmask",
+          "map_windows": "Window Status IO ID",
+          "mask_windows": "Window Status Bitmask",
+          "map_handbrake": "Handbrake Status IO ID",
+          "mask_handbrake": "Handbrake Status Bitmask",
+          "map_lights": "Lights Status IO ID",
+          "mask_lights": "Lights Status Bitmask"
         }
       }
     }

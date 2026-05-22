@@ -41,11 +41,13 @@ The **Direct Listener** is configured during setup:
     - **Disabled:** Plain TCP (unencrypted).
     - **Home Assistant Certificates:** Uses the certificates configured in your `http` section of `configuration.yaml`.
     - **Custom Certificates:** Specify manual paths to your certificate and private key.
+- **Debug Mode:** This checkbox enables debug logging and prints incoming payload messages.
 
 ### Advanced Mappings (Options Flow):
 You can customize the Teltonika IO ID mappings via the **Configure** button:
 - Map specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors.
-- Binary sensors for doors and security automatically use bitmask logic on the configured IO IDs.
+- Binary sensors for doors and security use bitmask logic on the configured IO IDs. The IO ID field accepts integer numbers or hex numbers (starting with 0x). The bitmask field accepts hex or binary notation (starting with 0b).
+- If a certain Teltonika IO ID is not supported by your car, leave the field blank to disable it.
 
 ---
 

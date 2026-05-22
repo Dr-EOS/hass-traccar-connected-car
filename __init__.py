@@ -17,6 +17,7 @@ from .const import (
     CONF_TLS_MODE,
     CONF_SSL_CERT,
     CONF_SSL_KEY,
+    CONF_DEBUG_MODE,
     TLS_MODE_NONE,
 )
 from .listener import TeltonikaServer
@@ -106,6 +107,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     server_info = hass.data[DOMAIN]["servers"][port]
     server = server_info["instance"]
     server_info["devices"].add(entry.entry_id)
+    
+    # Set debug mode for this device
+    server.set_debug(entry.data[CONF_IMEI], entry.data.get(CONF_DEBUG_MODE, False))
     
     # Register this device's callback
     unsub_data = server.async_add_data_callback(entry.data[CONF_IMEI], handle_direct_telemetry)

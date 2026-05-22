@@ -17,8 +17,18 @@ from .const import (
     CONF_MAPPING_WINDOWS,
     CONF_MAPPING_HANDBRAKE,
     CONF_MAPPING_LIGHTS,
+    CONF_MASK_DOOR_FL,
+    CONF_MASK_DOOR_FR,
+    CONF_MASK_DOOR_RL,
+    CONF_MASK_DOOR_RR,
+    CONF_MASK_LOCKED,
+    CONF_MASK_WINDOWS,
+    CONF_MASK_HANDBRAKE,
+    CONF_MASK_LIGHTS,
     DEFAULT_MAPPINGS,
+    DEFAULT_MASKS,
 )
+from .utils import parse_int_value
 
 @dataclass(frozen=True, kw_only=True)
 class Fmc130BinarySensorDescription(BinarySensorEntityDescription):
@@ -50,58 +60,45 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
     dynamic_sensors = list(BINARY_SENSORS)
     
-    # Doors (Bitmask on configured IO ID)
-    door_id = options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])
-    dynamic_sensors.extend([
-        Fmc130BinarySensorDescription(
-            key=door_id,
-            bitmask=0x01,
-            name="Door Front Left",
-            device_class=BinarySensorDeviceClass.DOOR
-        ),
-        Fmc130BinarySensorDescription(
-            key=door_id,
-            bitmask=0x02,
-            name="Door Front Right",
-            device_class=BinarySensorDeviceClass.DOOR
-        ),
-        Fmc130BinarySensorDescription(
-            key=door_id,
-            bitmask=0x04,
-            name="Door Rear Left",
-            device_class=BinarySensorDeviceClass.DOOR
-        ),
-        Fmc130BinarySensorDescription(
-            key=door_id,
-            bitmask=0x08,
-            name="Door Rear Right",
-            device_class=BinarySensorDeviceClass.DOOR
-        ),
-    ])
+    # Doors
+    door_mappings = [
+        (CONF_MAPPING_DOOR_FL, CONF_MASK_DOOR_FL, "Door Front Left"),
+        (CONF_MAPPING_DOOR_FR, CONF_MASK_DOOR_FR, "Door Front Right"),
+        (CONF_MAPPING_DOOR_RL, CONF_MASK_DOOR_RL, "Door Rear Left"),
+        (CONF_MAPPING_DOOR_RR, CONF_MASK_DOOR_RR, "Door Rear Right"),
+    ]
+    
+    for map_key, mask_key, name in door_mappings:
+        io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
+        mask = parse_int_value(options.get(mask_key, DEFAULT_MASKS[mask_key]))
+        
+        if io_id is not None:
+            dynamic_sensors.append(Fmc130BinarySensorDescription(
+                key=io_id,
+                bitmask=mask,
+                name=name,
+                device_class=BinarySensorDeviceClass.DOOR
+            ))
     
     # Other bitmask/numeric sensors
-    dynamic_sensors.extend([
-        Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED]),
-            bitmask=0x1E,
-            name="Locked",
-            device_class=BinarySensorDeviceClass.LOCK
-        ),
-        Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS]),
-            name="Windows",
-            device_class=BinarySensorDeviceClass.WINDOW
-        ),
-        Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE]),
-            name="Handbrake"
-        ),
-        Fmc130BinarySensorDescription(
-            key=options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS]),
-            name="Lights",
-            device_class=BinarySensorDeviceClass.LIGHT
-        )
-    ])
+    other_mappings = [
+        (CONF_MAPPING_LOCKED, CONF_MASK_LOCKED, "Locked", BinarySensorDeviceClass.LOCK),
+        (CONF_MAPPING_WINDOWS, CONF_MASK_WINDOWS, "Windows", BinarySensorDeviceClass.WINDOW),
+        (CONF_MAPPING_HANDBRAKE, CONF_MASK_HANDBRAKE, "Handbrake", None),
+        (CONF_MAPPING_LIGHTS, CONF_MASK_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
+    ]
+    
+    for map_key, mask_key, name, dev_class in other_mappings:
+        io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
+        mask = parse_int_value(options.get(mask_key, DEFAULT_MASKS[mask_key]))
+        
+        if io_id is not None:
+            dynamic_sensors.append(Fmc130BinarySensorDescription(
+                key=io_id,
+                bitmask=mask,
+                name=name,
+                device_class=dev_class
+            ))
 
     entities = []
 

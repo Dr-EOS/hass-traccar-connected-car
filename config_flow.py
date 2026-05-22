@@ -18,6 +18,7 @@ from .const import (
     CONF_TLS_MODE,
     CONF_SSL_CERT,
     CONF_SSL_KEY,
+    CONF_DEBUG_MODE,
     TLS_MODE_NONE,
     TLS_MODE_HA,
     TLS_MODE_CUSTOM,
@@ -34,7 +35,16 @@ from .const import (
     CONF_MAPPING_WINDOWS,
     CONF_MAPPING_HANDBRAKE,
     CONF_MAPPING_LIGHTS,
+    CONF_MASK_DOOR_FL,
+    CONF_MASK_DOOR_FR,
+    CONF_MASK_DOOR_RL,
+    CONF_MASK_DOOR_RR,
+    CONF_MASK_LOCKED,
+    CONF_MASK_WINDOWS,
+    CONF_MASK_HANDBRAKE,
+    CONF_MASK_LIGHTS,
     DEFAULT_MAPPINGS,
+    DEFAULT_MASKS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -81,6 +91,10 @@ def get_user_data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
             CONF_SSL_KEY,
             default=defaults.get(CONF_SSL_KEY, "")
         ): selector.TextSelector(),
+        vol.Optional(
+            CONF_DEBUG_MODE,
+            default=defaults.get(CONF_DEBUG_MODE, False)
+        ): selector.BooleanSelector(),
     }
 
     return vol.Schema(schema)
@@ -97,7 +111,7 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # Basic validation
-            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) < 10:
+            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) != 15:
                 errors[CONF_IMEI] = "invalid_imei"
             
             if not errors:
@@ -120,7 +134,7 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             # Basic validation
-            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) < 10:
+            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) != 15:
                 errors[CONF_IMEI] = "invalid_imei"
             
             if not errors:
@@ -181,7 +195,7 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         if user_input is not None:
             # Basic validation
-            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) < 10:
+            if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) != 15:
                 errors[CONF_IMEI] = "invalid_imei"
             
             if not errors:
@@ -230,37 +244,77 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MAPPING_DTC,
                         default=str(options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC])),
                     ): selector.TextSelector(),
+                    
                     vol.Optional(
                         CONF_MAPPING_DOOR_FL,
                         default=str(options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])),
                     ): selector.TextSelector(),
                     vol.Optional(
+                        CONF_MASK_DOOR_FL,
+                        default=str(options.get(CONF_MASK_DOOR_FL, DEFAULT_MASKS[CONF_MASK_DOOR_FL])),
+                    ): selector.TextSelector(),
+                    
+                    vol.Optional(
                         CONF_MAPPING_DOOR_FR,
                         default=str(options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR])),
                     ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MASK_DOOR_FR,
+                        default=str(options.get(CONF_MASK_DOOR_FR, DEFAULT_MASKS[CONF_MASK_DOOR_FR])),
+                    ): selector.TextSelector(),
+                    
                     vol.Optional(
                         CONF_MAPPING_DOOR_RL,
                         default=str(options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL])),
                     ): selector.TextSelector(),
                     vol.Optional(
+                        CONF_MASK_DOOR_RL,
+                        default=str(options.get(CONF_MASK_DOOR_RL, DEFAULT_MASKS[CONF_MASK_DOOR_RL])),
+                    ): selector.TextSelector(),
+                    
+                    vol.Optional(
                         CONF_MAPPING_DOOR_RR,
                         default=str(options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR])),
                     ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MASK_DOOR_RR,
+                        default=str(options.get(CONF_MASK_DOOR_RR, DEFAULT_MASKS[CONF_MASK_DOOR_RR])),
+                    ): selector.TextSelector(),
+                    
                     vol.Optional(
                         CONF_MAPPING_LOCKED,
                         default=str(options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED])),
                     ): selector.TextSelector(),
                     vol.Optional(
+                        CONF_MASK_LOCKED,
+                        default=str(options.get(CONF_MASK_LOCKED, DEFAULT_MASKS[CONF_MASK_LOCKED])),
+                    ): selector.TextSelector(),
+                    
+                    vol.Optional(
                         CONF_MAPPING_WINDOWS,
                         default=str(options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS])),
                     ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MASK_WINDOWS,
+                        default=str(options.get(CONF_MASK_WINDOWS, DEFAULT_MASKS[CONF_MASK_WINDOWS])),
+                    ): selector.TextSelector(),
+                    
                     vol.Optional(
                         CONF_MAPPING_HANDBRAKE,
                         default=str(options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE])),
                     ): selector.TextSelector(),
                     vol.Optional(
+                        CONF_MASK_HANDBRAKE,
+                        default=str(options.get(CONF_MASK_HANDBRAKE, DEFAULT_MASKS[CONF_MASK_HANDBRAKE])),
+                    ): selector.TextSelector(),
+                    
+                    vol.Optional(
                         CONF_MAPPING_LIGHTS,
                         default=str(options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MASK_LIGHTS,
+                        default=str(options.get(CONF_MASK_LIGHTS, DEFAULT_MASKS[CONF_MASK_LIGHTS])),
                     ): selector.TextSelector(),
                 }
             ),
