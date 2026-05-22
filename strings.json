@@ -12,7 +12,7 @@
           "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
           "ssl_key": "SSL Key Path",
-          "debug_mode": "Debug Mode"
+          "debug_mode": "Debug Mode (WARNING: Logs raw hex data including GPS coordinates)"
         },
         "sections": {
           "tls_config": {
@@ -35,7 +35,7 @@
           "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
           "ssl_key": "SSL Key Path",
-          "debug_mode": "Debug Mode"
+          "debug_mode": "Debug Mode (WARNING: Logs raw hex data including GPS coordinates)"
         },
         "sections": {
           "tls_config": {
@@ -75,7 +75,7 @@
           "tls_mode": "Encryption (TLS)",
           "ssl_cert": "SSL Certificate Path",
           "ssl_key": "SSL Key Path",
-          "debug_mode": "Debug Mode"
+          "debug_mode": "Debug Mode (WARNING: Logs raw hex data including GPS coordinates)"
         },
         "sections": {
           "tls_config": {
