@@ -65,20 +65,35 @@ The integration automatically creates entities based on the configured IMEI.
 - **Power & Satellites:** Diagnostic monitoring.
 
 ### CAN Bus Telemetry
-- **Engine:** RPM, Oil Level, Fuel Level (%).
-- **Car Status:** Total distance, number of DTC
-- **Doors & Windows:** Individual status for all four doors and windows (using bitmask logic).
-- **Security:** Locked/Unlocked status, Handbrake, and Light status.
+-**Default IO IDs:**
+IO ID,Name,Scaling,Unit
+66,External Voltage,0.001,V
+81,Vehicle Speed,,km/h
+84,Fuel Level,0.1,l
+87,Total Mileage,0.001,km/h
+115,Engine Temperature,0.1,°C
+200,Sleep Mode,,
+235,Oil Level Indicator,,
+239,Ignition,,
+240,Movement Indicator,,
+654,Front Left Door Open,,
+655,Front Right Door Open,,
+658,Trunk Door Open,,
+662,Car Is Closed,,
+866,Vehicle Range,,km
+913,Engine Cover Open,,
+953,Check Engine Indicator,,
+958,Oil Level Indicator,,
+959,Coolant liquid level Indicator,,
+960,Battery Not Charging Indicator,,
+964,Warning Indicator,,
+965,Lights Failure Indicator,,
+966,Low Tire Pressure Indicator,,
+967,Wear Of Brake Pads Indicator,,
+968,Low Fuel Level Indicator,,
+969,Maintenence required Indicator,,
+976,Low Coolant Level Indicator,,
 - **Logs:** Real-time protocol event log sensor showing connections and raw data info.
-
-### Command Support (Services)
-The integration registers domain-specific services to control the vehicle:
-- `fmc130_traccar.lock` / `fmc130_traccar.unlock`
-- `fmc130_traccar.engine_start` / `fmc130_traccar.engine_stop`
-- `fmc130_traccar.flash_lights` / `fmc130_traccar.horn`
-- `fmc130_traccar.dtc_reset`
-
-Commands are sent via Codec 12 with proper **CRC-16-IBM** verification.
 
 ---
 

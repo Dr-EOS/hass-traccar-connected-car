@@ -96,7 +96,13 @@ class TeltonikaProtocol(asyncio.Protocol):
                     self.server._log_event(f"RAW PACKET [{self.imei}]: {packet.hex()}")
                     _LOGGER.info("RAW PACKET [%s]: %s", self.imei, packet.hex())
                 
-                # TODO: Verify CRC here if needed (CRC-16-IBM)
+                # Verify CRC (CRC-16-IBM)
+                packet_crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
+                calculated_crc = crc16(packet)
+                
+                if packet_crc != calculated_crc:
+                    _LOGGER.warning("CRC mismatch for %s: expected %04X, got %04X", self.imei, packet_crc, calculated_crc)
+                    # For now we only log it and continue, but in strict mode we might want to drop it
                 
                 try:
                     num_records = self._parse_records(packet)
@@ -241,6 +247,8 @@ class TeltonikaProtocol(asyncio.Protocol):
             data["speed"] = val
         elif io_id == 16: # Odometer
             data["odometer"] = val
+        elif io_id == 87: # Total Mileage
+            data["totalDistance"] = val
         elif io_id == 320: # CAN Doors
             data["doorFrontLeft"] = bool(val & 0x01)
             data["doorFrontRight"] = bool(val & 0x02)

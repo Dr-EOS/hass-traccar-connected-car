@@ -207,15 +207,4 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
 
         val = apply_modifier(raw, self.entity_description.modifier)
         
-        # IO Tracking Debug Log
-        server = self.coordinator.config_entry.runtime_data.server
-        if server.is_debug(self._device["id"]):
-            mod_str = self.entity_description.modifier or "None"
-            msg = (
-                f"IO TRACKING [{self._device['id']}]: ID={self.entity_description.key}, "
-                f"Raw={raw}, Modifier={mod_str}, Val={val}"
-            )
-            server._log_event(msg)
-            _LOGGER.info(msg)
-
         return val

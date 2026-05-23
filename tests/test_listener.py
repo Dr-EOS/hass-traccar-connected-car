@@ -61,7 +61,7 @@ def test_protocol_data_reception(mock_server):
         b"\x01" +             # 1 record
         record + 
         b"\x01" +             # 1 record (repeat at end)
-        b"\x00\x00\x00\x00"   # CRC placeholder
+        b"\x00\x00\x30\x49"   # Correct CRC (0x3049)
     )
 
     protocol.data_received(packet)
@@ -118,7 +118,7 @@ def test_protocol_codec8e_reception(mock_server):
         b"\x01" +             # 1 record
         record + 
         b"\x01" +             # 1 record (repeat at end)
-        b"\x00\x00\x00\x00"   # CRC placeholder
+        b"\x00\x00\xe8\x1c"   # Correct CRC (0xE81C)
     )
 
     protocol.data_received(packet)

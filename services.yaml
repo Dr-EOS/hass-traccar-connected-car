@@ -1,7 +1,7 @@
 # custom_components/fmc130_traccar/services.yaml
 lock:
   name: car.lock
-  description: Sends a lock command to the vehicle via Traccar.
+  description: Sends a lock command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.
@@ -13,7 +13,7 @@ lock:
 
 unlock:
   name: car.unlock
-  description: Sends an unlock command to the vehicle via Traccar.
+  description: Sends an unlock command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.
@@ -25,7 +25,7 @@ unlock:
 
 horn:
   name: car.horn
-  description: Sends a horn command to the vehicle via Traccar.
+  description: Sends a horn command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.
@@ -36,7 +36,7 @@ horn:
 
 flash_lights:
   name: car.flash_lights
-  description: Sends a flash lights command to the vehicle via Traccar.
+  description: Sends a flash lights command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.
@@ -47,7 +47,7 @@ flash_lights:
 
 engine_start:
   name: car.engine_start
-  description: Sends an engine start command to the vehicle via Traccar.
+  description: Sends an engine start command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.
@@ -58,7 +58,7 @@ engine_start:
 
 engine_stop:
   name: car.engine_stop
-  description: Sends an engine stop command to the vehicle via Traccar.
+  description: Sends an engine stop command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.
@@ -69,7 +69,7 @@ engine_stop:
 
 dtc_reset:
   name: car.dtc_reset
-  description: Sends a DTC reset command to the vehicle via Traccar.
+  description: Sends a DTC reset command directly to the vehicle.
   fields:
     device_id:
       description: The Home Assistant device ID of the tracker.

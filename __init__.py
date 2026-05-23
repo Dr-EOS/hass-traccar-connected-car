@@ -82,6 +82,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
 
     await coordinator.async_config_entry_first_refresh()
 
+    # Prepare IO tracking info
+    io_modifiers = {}
+    for map_key, mod_key in [
+        (CONF_MAPPING_RPM, CONF_MODIFIER_RPM),
+        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL),
+        (CONF_MAPPING_OIL, CONF_MODIFIER_OIL),
+        (CONF_MAPPING_DTC, CONF_MODIFIER_DTC),
+        (CONF_MAPPING_DOOR_FL, CONF_MODIFIER_DOOR_FL),
+        (CONF_MAPPING_DOOR_FR, CONF_MODIFIER_DOOR_FR),
+        (CONF_MAPPING_DOOR_RL, CONF_MODIFIER_DOOR_RL),
+        (CONF_MAPPING_DOOR_RR, CONF_MODIFIER_DOOR_RR),
+        (CONF_MAPPING_LOCKED, CONF_MODIFIER_LOCKED),
+        (CONF_MAPPING_WINDOWS, CONF_MODIFIER_WINDOWS),
+        (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE),
+        (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS),
+    ]:
+        map_val = entry.options.get(map_key, DEFAULT_MAPPINGS.get(map_key))
+        io_id = parse_int_value(map_val)
+        if io_id is not None:
+            modifier = entry.options.get(mod_key, DEFAULT_MODIFIERS.get(mod_key))
+            io_modifiers.setdefault(io_id, []).append(modifier)
+    
+    # Standard modifiers
+    io_modifiers.setdefault(16, ["*0.001"]) # Odometer
+    io_modifiers.setdefault(87, ["*0.001"]) # Total Mileage
+    io_modifiers.setdefault(66, ["*0.001"]) # External Voltage
+    io_modifiers.setdefault(67, ["*0.001"]) # Battery Voltage
+
     @callback
     def handle_direct_telemetry(imei, data):
         """Handle data pushed from the Teltonika listener."""
@@ -92,6 +120,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
             entry_data["positions"][dev_id] = {"deviceId": dev_id, "attributes": {}}
         
         pos = entry_data["positions"][dev_id]
+
+        # IO Tracking (before data is popped)
+        if server.is_debug(imei):
+            from .utils import apply_modifier
+            for key, val in data.items():
+                if isinstance(key, int):
+                    modifiers = io_modifiers.get(key, [None])
+                    for mod in modifiers:
+                        converted = apply_modifier(val, mod)
+                        msg = f"IO TRACKING [{imei}]: ID={key}, Raw={val}, Modifier={mod or 'None'}, Val={converted}"
+                        server._log_event(msg)
+                        _LOGGER.info(msg)
         
         # Extract location and common GPS fields if present
         for field in ["latitude", "longitude", "altitude", "angle", "sat", "speed"]:

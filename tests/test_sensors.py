@@ -51,10 +51,10 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     assert state.state == "13.8"
     
     state = hass.states.get("sensor.test_vehicle_speed")
-    assert state.state == "85.0"
+    assert state.state == "85"
     
     state = hass.states.get("sensor.test_vehicle_satellites")
-    assert state.state == "12.0"
+    assert state.state == "12"
 
     # Check Last Update sensor
     update_state = hass.states.get("sensor.test_vehicle_last_update")
@@ -78,3 +78,26 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     assert log_state is not None
     assert log_state.state == "Push Update Test"
     assert "recent_events" in log_state.attributes
+
+    # Test Locked bitmask (IO ID 321, mask 0x1E)
+    # 0x1E = 30 decimal
+    callback("123456789012345", {321: 30}) # All bits set -> Locked
+    await hass.async_block_till_done()
+    lock_state = hass.states.get("binary_sensor.test_vehicle_locked")
+    assert lock_state.state == STATE_OFF # Locked
+
+    callback("123456789012345", {321: 0}) # No bits set -> Unlocked
+    await hass.async_block_till_done()
+    lock_state = hass.states.get("binary_sensor.test_vehicle_locked")
+    assert lock_state.state == STATE_ON # Unlocked
+
+    callback("123456789012345", {321: 2}) # Only some bits set -> Unlocked
+    await hass.async_block_till_done()
+    lock_state = hass.states.get("binary_sensor.test_vehicle_locked")
+    assert lock_state.state == STATE_ON # Unlocked
+
+    # Test scaling modifier (*0.001 for odometer)
+    callback("123456789012345", {"odometer": 1234567}) # 1234567 meters -> 1234.567 km
+    await hass.async_block_till_done()
+    odo_state = hass.states.get("sensor.test_vehicle_odometer")
+    assert odo_state.state == "1234.567"

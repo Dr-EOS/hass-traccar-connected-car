@@ -171,15 +171,4 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
             else:
                 state = not bool(val)
 
-        # IO Tracking Debug Log
-        server = self.coordinator.config_entry.runtime_data.server
-        if server.is_debug(self._device["id"]):
-            mod_str = self.entity_description.modifier or "None"
-            msg = (
-                f"IO TRACKING [{self._device['id']}]: ID={self.entity_description.key}, "
-                f"Raw={raw}, Modifier={mod_str}, State={state}"
-            )
-            server._log_event(msg)
-            _LOGGER.info(msg)
-
         return state
