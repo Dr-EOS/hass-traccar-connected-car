@@ -439,9 +439,3 @@ class TeltonikaServer:
             _LOGGER.error("Device %s not connected", imei)
             return False
         return self._connections[imei].send_command(command)
-d: str) -> bool:
-        """Send a command to a specific device."""
-        if imei not in self._connections:
-            _LOGGER.error("Device %s not connected", imei)
-            return False
-        return self._connections[imei].send_command(command)

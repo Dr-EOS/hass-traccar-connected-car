@@ -19,8 +19,22 @@ from .const import (
     CONF_SSL_KEY,
     CONF_DEBUG_MODE,
     TLS_MODE_NONE,
+    CONF_MAPPING_RPM,
+    CONF_MAPPING_FUEL,
+    CONF_MAPPING_OIL,
+    CONF_MAPPING_DTC,
+    CONF_MAPPING_DOOR_FL,
+    CONF_MAPPING_DOOR_FR,
+    CONF_MAPPING_DOOR_RL,
+    CONF_MAPPING_DOOR_RR,
+    CONF_MAPPING_LOCKED,
+    CONF_MAPPING_WINDOWS,
+    CONF_MAPPING_HANDBRAKE,
+    CONF_MAPPING_LIGHTS,
+    DEFAULT_MAPPINGS,
 )
 from .listener import TeltonikaServer
+from .utils import parse_int_value
 
 _LOGGER = logging.getLogger(__name__)
 

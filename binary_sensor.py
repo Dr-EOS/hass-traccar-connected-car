@@ -17,16 +17,16 @@ from .const import (
     CONF_MAPPING_WINDOWS,
     CONF_MAPPING_HANDBRAKE,
     CONF_MAPPING_LIGHTS,
-    CONF_MASK_DOOR_FL,
-    CONF_MASK_DOOR_FR,
-    CONF_MASK_DOOR_RL,
-    CONF_MASK_DOOR_RR,
-    CONF_MASK_LOCKED,
-    CONF_MASK_WINDOWS,
-    CONF_MASK_HANDBRAKE,
-    CONF_MASK_LIGHTS,
+    CONF_MODIFIER_DOOR_FL,
+    CONF_MODIFIER_DOOR_FR,
+    CONF_MODIFIER_DOOR_RL,
+    CONF_MODIFIER_DOOR_RR,
+    CONF_MODIFIER_LOCKED,
+    CONF_MODIFIER_WINDOWS,
+    CONF_MODIFIER_HANDBRAKE,
+    CONF_MODIFIER_LIGHTS,
     DEFAULT_MAPPINGS,
-    DEFAULT_MASKS,
+    DEFAULT_MODIFIERS,
 )
 from .utils import parse_int_value
 
@@ -62,15 +62,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     # Doors
     door_mappings = [
-        (CONF_MAPPING_DOOR_FL, CONF_MASK_DOOR_FL, "Door Front Left"),
-        (CONF_MAPPING_DOOR_FR, CONF_MASK_DOOR_FR, "Door Front Right"),
-        (CONF_MAPPING_DOOR_RL, CONF_MASK_DOOR_RL, "Door Rear Left"),
-        (CONF_MAPPING_DOOR_RR, CONF_MASK_DOOR_RR, "Door Rear Right"),
+        (CONF_MAPPING_DOOR_FL, CONF_MODIFIER_DOOR_FL, "Door Front Left"),
+        (CONF_MAPPING_DOOR_FR, CONF_MODIFIER_DOOR_FR, "Door Front Right"),
+        (CONF_MAPPING_DOOR_RL, CONF_MODIFIER_DOOR_RL, "Door Rear Left"),
+        (CONF_MAPPING_DOOR_RR, CONF_MODIFIER_DOOR_RR, "Door Rear Right"),
     ]
     
-    for map_key, mask_key, name in door_mappings:
+    for map_key, mod_key, name in door_mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
-        mask = parse_int_value(options.get(mask_key, DEFAULT_MASKS[mask_key]))
+        mask = parse_int_value(options.get(mod_key, DEFAULT_MODIFIERS[mod_key]))
         
         if io_id is not None:
             dynamic_sensors.append(Fmc130BinarySensorDescription(
@@ -82,15 +82,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     # Other bitmask/numeric sensors
     other_mappings = [
-        (CONF_MAPPING_LOCKED, CONF_MASK_LOCKED, "Locked", BinarySensorDeviceClass.LOCK),
-        (CONF_MAPPING_WINDOWS, CONF_MASK_WINDOWS, "Windows", BinarySensorDeviceClass.WINDOW),
-        (CONF_MAPPING_HANDBRAKE, CONF_MASK_HANDBRAKE, "Handbrake", None),
-        (CONF_MAPPING_LIGHTS, CONF_MASK_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
+        (CONF_MAPPING_LOCKED, CONF_MODIFIER_LOCKED, "Locked", BinarySensorDeviceClass.LOCK),
+        (CONF_MAPPING_WINDOWS, CONF_MODIFIER_WINDOWS, "Windows", BinarySensorDeviceClass.WINDOW),
+        (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE, "Handbrake", None),
+        (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
     ]
     
-    for map_key, mask_key, name, dev_class in other_mappings:
+    for map_key, mod_key, name, dev_class in other_mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
-        mask = parse_int_value(options.get(mask_key, DEFAULT_MASKS[mask_key]))
+        mask = parse_int_value(options.get(mod_key, DEFAULT_MODIFIERS[mod_key]))
         
         if io_id is not None:
             dynamic_sensors.append(Fmc130BinarySensorDescription(
@@ -171,8 +171,3 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
             return not bool(val)
 
         return bool(val)
-ass: ON = Unlocked, OFF = Locked
-        if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
-            return not val
-
-        return val
