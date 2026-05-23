@@ -320,6 +320,8 @@ class TeltonikaServer:
         self._server = None
         self._connections = {}
         self._debug_modes = {} # IMEI -> bool
+        self._mappings = {} # IMEI -> set(IO IDs)
+        self._unknown_io_seen = {} # IMEI -> set(IO IDs)
         self.events = [] # Store last 20 events
         self._update_callbacks = []
         self._data_callbacks = {} # IMEI -> callback
@@ -331,6 +333,14 @@ class TeltonikaServer:
     def is_debug(self, imei: str) -> bool:
         """Check if debug mode is enabled for an IMEI."""
         return self._debug_modes.get(imei, False)
+
+    def set_mappings(self, imei: str, mapping_ids: set[int]) -> None:
+        """Set dynamic IO mappings for an IMEI."""
+        self._mappings[imei] = mapping_ids
+
+    def get_mappings(self, imei: str) -> set[int]:
+        """Get dynamic IO mappings for an IMEI."""
+        return self._mappings.get(imei, set())
 
     def _log_event(self, message: str) -> None:
         """Log an event for the UI."""
@@ -424,6 +434,12 @@ class TeltonikaServer:
             del self._connections[imei]
 
     def send_command(self, imei: str, command: str) -> bool:
+        """Send a command to a specific device."""
+        if imei not in self._connections:
+            _LOGGER.error("Device %s not connected", imei)
+            return False
+        return self._connections[imei].send_command(command)
+d: str) -> bool:
         """Send a command to a specific device."""
         if imei not in self._connections:
             _LOGGER.error("Device %s not connected", imei)

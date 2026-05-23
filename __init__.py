@@ -109,10 +109,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     server_info["devices"].add(entry.entry_id)
     
     # Set debug mode for this device
-    server.set_debug(entry.data[CONF_IMEI], entry.data.get(CONF_DEBUG_MODE, False))
+    imei = entry.data[CONF_IMEI]
+    server.set_debug(imei, entry.data.get(CONF_DEBUG_MODE, False))
+    
+    # Register mapped IO IDs for unknown IO tracking
+    mapping_keys = [
+        CONF_MAPPING_RPM, CONF_MAPPING_FUEL, CONF_MAPPING_OIL, CONF_MAPPING_DTC,
+        CONF_MAPPING_DOOR_FL, CONF_MAPPING_DOOR_FR, CONF_MAPPING_DOOR_RL, CONF_MAPPING_DOOR_RR,
+        CONF_MAPPING_LOCKED, CONF_MAPPING_WINDOWS, CONF_MAPPING_HANDBRAKE, CONF_MAPPING_LIGHTS
+    ]
+    mapped_ids = set()
+    for key in mapping_keys:
+        val = entry.options.get(key, DEFAULT_MAPPINGS.get(key))
+        io_id = parse_int_value(val)
+        if io_id is not None:
+            mapped_ids.add(io_id)
+    server.set_mappings(imei, mapped_ids)
     
     # Register this device's callback
-    unsub_data = server.async_add_data_callback(entry.data[CONF_IMEI], handle_direct_telemetry)
+    unsub_data = server.async_add_data_callback(imei, handle_direct_telemetry)
     entry.async_on_unload(unsub_data)
 
     entry.runtime_data = Fmc130RuntimeData(
