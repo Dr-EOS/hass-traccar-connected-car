@@ -28,12 +28,12 @@ from .const import (
     DEFAULT_MAPPINGS,
     DEFAULT_MODIFIERS,
 )
-from .utils import parse_int_value
+from .utils import parse_int_value, apply_modifier
 
 @dataclass(frozen=True, kw_only=True)
 class Fmc130BinarySensorDescription(BinarySensorEntityDescription):
     """Class describing FMC130 binary sensor entities."""
-    bitmask: int | None = None
+    modifier: str | None = None
 
 BINARY_SENSORS: list[Fmc130BinarySensorDescription] = [
     Fmc130BinarySensorDescription(
@@ -70,12 +70,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     for map_key, mod_key, name in door_mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
-        mask = parse_int_value(options.get(mod_key, DEFAULT_MODIFIERS[mod_key]))
+        modifier = options.get(mod_key, DEFAULT_MODIFIERS[mod_key])
         
         if io_id is not None:
             dynamic_sensors.append(Fmc130BinarySensorDescription(
                 key=io_id,
-                bitmask=mask,
+                modifier=modifier,
                 name=name,
                 device_class=BinarySensorDeviceClass.DOOR
             ))
@@ -90,12 +90,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     for map_key, mod_key, name, dev_class in other_mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
-        mask = parse_int_value(options.get(mod_key, DEFAULT_MODIFIERS[mod_key]))
+        modifier = options.get(mod_key, DEFAULT_MODIFIERS[mod_key])
         
         if io_id is not None:
             dynamic_sensors.append(Fmc130BinarySensorDescription(
                 key=io_id,
-                bitmask=mask,
+                modifier=modifier,
                 name=name,
                 device_class=dev_class
             ))
@@ -122,10 +122,10 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
         self._device = device
         self.entity_description = description
         
-        # Unique ID based on IMEI, key (IO ID), and bitmask (if any)
+        # Unique ID based on IMEI, key (IO ID), and modifier (to distinguish multi-entity IOs)
         uid = f"{DOMAIN}_{device['id']}_{description.key}"
-        if description.bitmask is not None:
-            uid += f"_{description.bitmask}"
+        if description.modifier is not None:
+            uid += f"_{description.modifier}"
         self._attr_unique_id = uid
 
     @property
@@ -160,14 +160,26 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
         val = apply_modifier(raw, self.entity_description.modifier)
 
         # Home Assistant LOCK device class: ON = Unlocked, OFF = Locked
+        state = bool(val)
         if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
             # If modifier is a bitmask, we check if all bits are set
             if self.entity_description.modifier and self.entity_description.modifier.startswith("&"):
                 mask = parse_int_value(self.entity_description.modifier[1:])
                 if mask is not None:
                     is_locked = (int(raw) & mask) == mask
-                    return not is_locked
-            
-            return not bool(val)
+                    state = not is_locked
+            else:
+                state = not bool(val)
 
-        return bool(val)
+        # IO Tracking Debug Log
+        server = self.coordinator.config_entry.runtime_data.server
+        if server.is_debug(self._device["id"]):
+            mod_str = self.entity_description.modifier or "None"
+            msg = (
+                f"IO TRACKING [{self._device['id']}]: ID={self.entity_description.key}, "
+                f"Raw={raw}, Modifier={mod_str}, State={state}"
+            )
+            server._log_event(msg)
+            _LOGGER.info(msg)
+
+        return state

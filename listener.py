@@ -39,10 +39,6 @@ class TeltonikaProtocol(asyncio.Protocol):
         _LOGGER.debug("Connection from %s", self._peername)
 
     def data_received(self, data: bytes) -> None:
-        if self.imei and self.server.is_debug(self.imei):
-            self.server._log_event(f"RAW DATA [{self.imei}]: {data.hex()}")
-            _LOGGER.info("RAW DATA [%s]: %s", self.imei, data.hex())
-        
         _LOGGER.debug("Incoming data from %s: %s", self._peername, data.hex())
         self.buffer.extend(data)
         
@@ -95,6 +91,11 @@ class TeltonikaProtocol(asyncio.Protocol):
                 
                 # We have a full packet
                 packet = self.buffer[8:8+data_len]
+                
+                if self.server.is_debug(self.imei):
+                    self.server._log_event(f"RAW PACKET [{self.imei}]: {packet.hex()}")
+                    _LOGGER.info("RAW PACKET [%s]: %s", self.imei, packet.hex())
+                
                 # TODO: Verify CRC here if needed (CRC-16-IBM)
                 
                 try:
@@ -111,126 +112,113 @@ class TeltonikaProtocol(asyncio.Protocol):
 
     def _parse_records(self, data: bytes) -> int:
         """Parse Codec 8/8E records."""
-        if len(data) < 3: # Codec(1) + NumRec(1) + NumRec2(1)
+        if len(data) < 3:
             return 0
             
         codec_id = data[0]
         num_records = data[1]
         
-        # Security: Limit number of records to prevent CPU exhaustion
         if num_records > 100:
             _LOGGER.warning("Packet from %s has too many records (%d), limiting to 100", self.imei, num_records)
             num_records = 100
 
-        _LOGGER.debug("Received %d records from %s (Codec 0x%02X)", num_records, self.imei, codec_id)
+        _LOGGER.debug("Parsing %d records from %s (Codec 0x%02X)", num_records, self.imei, codec_id)
         
         offset = 2
         last_extracted_data = {}
 
-        try:
-            for _ in range(num_records):
-                # Each record has: Timestamp (8) + Priority (1) + GPS (15) = 24 bytes minimum
-                if len(data) < offset + 24:
-                    _LOGGER.warning("Truncated record in packet from %s", self.imei)
-                    break
+        for i in range(num_records):
+            # Check if we have enough data for a record header: Timestamp(8)+Priority(1)+GPS(15) = 24 bytes
+            if len(data) < offset + 24:
+                _LOGGER.warning("Truncated record %d in packet from %s", i+1, self.imei)
+                break
+            
+            # Skip Timestamp(8) and Priority(1)
+            offset += 9
+            
+            # GPS Data: Lon(4), Lat(4), Alt(2), Ang(2), Sat(1), Spd(2) = 15 bytes
+            lon = struct.unpack(">i", data[offset:offset+4])[0] / 10000000.0
+            lat = struct.unpack(">i", data[offset+4:offset+8])[0] / 10000000.0
+            alt = struct.unpack(">H", data[offset+8:offset+10])[0]
+            ang = struct.unpack(">H", data[offset+10:offset+12])[0]
+            sat = data[offset+12]
+            spd = struct.unpack(">H", data[offset+13:offset+15])[0]
+            offset += 15
+            
+            last_extracted_data.update({
+                "longitude": lon,
+                "latitude": lat,
+                "altitude": alt,
+                "angle": ang,
+                "sat": sat,
+                "speed": spd,
+            })
+            
+            # IO Elements
+            if codec_id == 0x08:
+                if len(data) < offset + 1: break
+                # Event ID (1 byte)
+                offset += 1
                 
-                # Timestamp (8), Priority (1)
-                # gps_time = struct.unpack(">Q", data[offset:offset+8])[0]
-                offset += 9
-                
-                # GPS Data
-                lon = struct.unpack(">i", data[offset:offset+4])[0] / 10000000.0
-                lat = struct.unpack(">i", data[offset+4:offset+8])[0] / 10000000.0
-                alt = struct.unpack(">H", data[offset+8:offset+10])[0]
-                ang = struct.unpack(">H", data[offset+10:offset+12])[0]
-                sat = data[offset+12]
-                spd = struct.unpack(">H", data[offset+13:offset+15])[0]
-                offset += 15
-                
-                last_extracted_data.update({
-                    "longitude": lon,
-                    "latitude": lat,
-                    "altitude": alt,
-                    "angle": ang,
-                    "sat": sat,
-                    "speed": spd,
-                })
-                
-                # IO Elements
-                if codec_id == 0x08:
+                for size in [1, 2, 4, 8]:
                     if len(data) < offset + 1: break
-                    offset += 1 # Event ID (1 byte)
-                    for size in [1, 2, 4, 8]:
-                        if len(data) < offset + 1: break
-                        n_elements = data[offset]
+                    n_elements = data[offset]
+                    offset += 1
+                    
+                    for _ in range(n_elements):
+                        if len(data) < offset + 1 + size: break
+                        io_id = data[offset]
                         offset += 1
-                        
-                        # Security: Limit IO elements
-                        if n_elements > 128:
-                            _LOGGER.warning("Too many IO elements (%d) in packet from %s", n_elements, self.imei)
-                            n_elements = 128
-
-                        for _ in range(n_elements):
-                            if len(data) < offset + 1 + size: break
-                            io_id = data[offset]
-                            offset += 1
-                            if size == 1:
-                                val = data[offset]
-                            elif size == 2:
-                                val = struct.unpack(">H", data[offset:offset+2])[0]
-                            elif size == 4:
-                                val = struct.unpack(">I", data[offset:offset+4])[0]
-                            elif size == 8:
-                                val = struct.unpack(">Q", data[offset:offset+8])[0]
-                            
+                        val = self._unpack_value(data, offset, size)
+                        if val is not None:
                             self._map_io(last_extracted_data, io_id, val)
-                            offset += size
+                        offset += size
+            
+            elif codec_id == 0x8E: # Codec 8 Extended
+                if len(data) < offset + 2: break
+                # Event ID (2 bytes)
+                offset += 2
                 
-                elif codec_id == 0x8E: # Codec 8 Extended
+                for size in [1, 2, 4, 8]:
                     if len(data) < offset + 2: break
-                    offset += 2 # Event ID (2 bytes)
-                    for size in [1, 2, 4, 8]:
-                        if len(data) < offset + 2: break
-                        n_elements = struct.unpack(">H", data[offset:offset+2])[0]
+                    n_elements = struct.unpack(">H", data[offset:offset+2])[0]
+                    offset += 2
+
+                    for _ in range(n_elements):
+                        if len(data) < offset + 2 + size: break
+                        io_id = struct.unpack(">H", data[offset:offset+2])[0]
                         offset += 2
-
-                        # Security: Limit IO elements
-                        if n_elements > 128:
-                            _LOGGER.warning("Too many IO elements (%d) in packet from %s", n_elements, self.imei)
-                            n_elements = 128
-
-                        for _ in range(n_elements):
-                            if len(data) < offset + 2 + size: break
-                            io_id = struct.unpack(">H", data[offset:offset+2])[0]
-                            offset += 2
-                            if size == 1:
-                                val = data[offset]
-                            elif size == 2:
-                                val = struct.unpack(">H", data[offset:offset+2])[0]
-                            elif size == 4:
-                                val = struct.unpack(">I", data[offset:offset+4])[0]
-                            elif size == 8:
-                                val = struct.unpack(">Q", data[offset:offset+8])[0]
-                            
+                        val = self._unpack_value(data, offset, size)
+                        if val is not None:
                             self._map_io(last_extracted_data, io_id, val)
-                            offset += size
-        except (struct.error, IndexError) as err:
-            _LOGGER.error("Protocol error parsing records from %s: %s", self.imei, err)
+                        offset += size
 
-        # Final check: Num Records should match at the end
+        # Final ACK records check
         if len(data) > offset and data[offset] != num_records:
-            _LOGGER.warning("Num records mismatch at end of packet from %s: %d != %d", 
-                          self.imei, data[offset], num_records)
+            _LOGGER.debug("Num records check at end: %d != %d", data[offset], num_records)
 
-        # Log to the server's event buffer
         self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec {codec_id})")
         
-        # Trigger update in HA with the last record's data
         if last_extracted_data:
             last_extracted_data["num_records"] = num_records
             self.server.handle_data(self.imei, last_extracted_data)
         
         return num_records
+
+    def _unpack_value(self, data: bytes, offset: int, size: int) -> int | None:
+        """Unpack IO value of given size."""
+        try:
+            if size == 1:
+                return data[offset]
+            if size == 2:
+                return struct.unpack(">H", data[offset:offset+2])[0]
+            if size == 4:
+                return struct.unpack(">I", data[offset:offset+4])[0]
+            if size == 8:
+                return struct.unpack(">Q", data[offset:offset+8])[0]
+        except (struct.error, IndexError):
+            pass
+        return None
 
     def _map_io(self, data: dict, io_id: int, val: int) -> None:
         """Map IO ID to named attribute or generic key."""
@@ -238,6 +226,7 @@ class TeltonikaProtocol(asyncio.Protocol):
         data[io_id] = val
         
         # Common Teltonika IO IDs (FMC130) for standard logic
+        mapped = True
         if io_id == 1: # Ignition
             data["ignition"] = bool(val)
         elif io_id == 240: # Motion
@@ -268,7 +257,20 @@ class TeltonikaProtocol(asyncio.Protocol):
         elif io_id == 324: # Windows
             data["windows"] = bool(val)
         else:
-            _LOGGER.debug("Unknown Teltonika IO ID %d for %s: %s", io_id, self.imei, val)
+            # Check dynamic mappings
+            if io_id not in self.server.get_mappings(self.imei):
+                mapped = False
+                _LOGGER.debug("Unknown Teltonika IO ID %d for %s: %s", io_id, self.imei, val)
+                
+                # In debug mode, log new unknown IOs to the event log
+                if self.server.is_debug(self.imei):
+                    seen = self.server._unknown_io_seen.setdefault(self.imei, set())
+                    if io_id not in seen:
+                        seen.add(io_id)
+                        self.server._log_event(f"UNKNOWN IO ID [{self.imei}]: {io_id} (Value: {val})")
+
+        if mapped:
+            _LOGGER.debug("Mapped Teltonika IO ID %d for %s: %s", io_id, self.imei, val)
 
     def connection_lost(self, exc: Exception | None) -> None:
         if exc:

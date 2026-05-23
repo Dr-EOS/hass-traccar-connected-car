@@ -17,31 +17,35 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     DOMAIN,
     CONF_MAPPING_RPM,
+    CONF_MODIFIER_RPM,
     CONF_MAPPING_FUEL,
+    CONF_MODIFIER_FUEL,
     CONF_MAPPING_OIL,
+    CONF_MODIFIER_OIL,
     CONF_MAPPING_DTC,
+    CONF_MODIFIER_DTC,
     DEFAULT_MAPPINGS,
+    DEFAULT_MODIFIERS,
 )
-from .utils import parse_int_value
+from .utils import parse_int_value, apply_modifier
 
 @dataclass(frozen=True, kw_only=True)
 class Fmc130SensorDescription(SensorEntityDescription):
     """Class describing FMC130 sensor entities."""
-    factor: float = 1.0
-    bitmask: int | None = None
+    modifier: str | None = None
 
 SENSORS: list[Fmc130SensorDescription] = [
     Fmc130SensorDescription(
         key="odometer",
         name="Odometer",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
-        factor=0.001,
+        modifier="*0.001",
     ),
     Fmc130SensorDescription(
         key="totalDistance",
         name="Total Distance",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
-        factor=0.001,
+        modifier="*0.001",
     ),
     Fmc130SensorDescription(
         key="power",
@@ -78,19 +82,22 @@ async def async_setup_entry(hass, entry, async_add_entities):
     dynamic_sensors = list(SENSORS)
     
     mappings = [
-        (CONF_MAPPING_RPM, "RPM", "rpm"),
-        (CONF_MAPPING_FUEL, "Fuel Level", "%"),
-        (CONF_MAPPING_OIL, "Oil Level", None),
-        (CONF_MAPPING_DTC, "DTC Codes", None),
+        (CONF_MAPPING_RPM, CONF_MODIFIER_RPM, "RPM", "rpm"),
+        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL, "Fuel Level", "%"),
+        (CONF_MAPPING_OIL, CONF_MODIFIER_OIL, "Oil Level", None),
+        (CONF_MAPPING_DTC, CONF_MODIFIER_DTC, "DTC Codes", None),
     ]
     
-    for map_key, name, unit in mappings:
+    for map_key, mod_key, name, unit in mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
+        modifier = options.get(mod_key, DEFAULT_MODIFIERS[mod_key])
+        
         if io_id is not None:
             dynamic_sensors.append(Fmc130SensorDescription(
                 key=io_id,
                 name=name,
-                native_unit_of_measurement=unit
+                native_unit_of_measurement=unit,
+                modifier=modifier
             ))
 
     entities = []
@@ -161,11 +168,8 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         self._device = device
         self.entity_description = description
         
-        # Unique ID based on IMEI, key (IO ID), and bitmask (if any)
-        uid = f"{DOMAIN}_{device['id']}_{description.key}"
-        if description.bitmask is not None:
-            uid += f"_{description.bitmask}"
-        self._attr_unique_id = uid
+        # Unique ID based on IMEI and key (IO ID)
+        self._attr_unique_id = f"{DOMAIN}_{device['id']}_{description.key}"
 
     @property
     def device_info(self):
@@ -201,4 +205,17 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
             except (ValueError, TypeError):
                 return None
 
-        return apply_modifier(raw, self.entity_description.modifier)
+        val = apply_modifier(raw, self.entity_description.modifier)
+        
+        # IO Tracking Debug Log
+        server = self.coordinator.config_entry.runtime_data.server
+        if server.is_debug(self._device["id"]):
+            mod_str = self.entity_description.modifier or "None"
+            msg = (
+                f"IO TRACKING [{self._device['id']}]: ID={self.entity_description.key}, "
+                f"Raw={raw}, Modifier={mod_str}, Val={val}"
+            )
+            server._log_event(msg)
+            _LOGGER.info(msg)
+
+        return val

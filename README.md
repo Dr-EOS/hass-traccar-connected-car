@@ -44,10 +44,11 @@ The **Direct Listener** is configured during setup:
 - **Debug Mode:** This checkbox enables debug logging and prints incoming payload messages.
 
 ### Advanced Mappings (Options Flow):
-You can customize the Teltonika IO ID mappings via the **Configure** button:
-- Map specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors. The IO ID field accepts integer numbers or hex numbers (starting with 0x).
-- If a certain Teltonika IO ID is not supported by your car, leave the field blank to disable it.
-- The field right to the IO ID is a modifier field. I can be used to apply either scaling factors (e.g. '*0.1' or bitmask logic (e.g. '&0x0F')
+You can customize the Teltonika IO ID mappings (refer to 3. Features & Sensors) via the **Configure** button:
+- Each line contains input fields: IO ID, modifier field, unit
+- If a certain Teltonika IO ID is not supported by your car, leave the IO ID field blank to disable it.
+- The IO ID field maps specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors. It accepts integer numbers or hex numbers (starting with 0x).
+- The modifier field can be used to apply either scaling factors (e.g. '*0.1' or bitmask logic (e.g. '&0x0F')
 - Binary sensors for doors and security use bitmask logic on the configured IO IDs. The bitmask field accepts hex or binary notation (starting with 0b).
 
 
@@ -83,9 +84,9 @@ Commands are sent via Codec 12 with proper **CRC-16-IBM** verification.
 
 ## 4. Debugging & Troubleshooting
 
-The integration provides extensive debug information:
+The integration provides extensive debug information which can be enabled in the config dialog:
 - **Raw Hex Dumps:** Every incoming packet is logged as hex in `DEBUG` mode.
-- **IO Tracking:** Any IO IDs sent by your hardware are logged for easy identification. Logs comprise IO ID, corresponding raw value, the configured modifier to apply (scaling, bitmask, ...) and converted value after applying the modifier.
+- **IO Tracking:** Any IO IDs sent by your hardware are logged to Home Assistent built-in logs for easy identification. Log entries comprise IO ID, corresponding raw value, the configured modifier to apply (scaling, bitmask, ...) and converted value after applying the modifier.
 - **Blocking Protection:** High-latency tasks like SSL certificate loading are handled in background threads to ensure Home Assistant UI stability.
 
 ---
