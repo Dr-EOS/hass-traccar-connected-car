@@ -233,16 +233,35 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM])),
                     ): selector.TextSelector(),
                     vol.Optional(
+                        CONF_MODIFIER_RPM,
+                        default=str(options.get(CONF_MODIFIER_RPM, DEFAULT_MODIFIERS[CONF_MODIFIER_RPM])),
+                    ): selector.TextSelector(),
+                    
+                    vol.Optional(
                         CONF_MAPPING_FUEL,
                         default=str(options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL])),
                     ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_FUEL,
+                        default=str(options.get(CONF_MODIFIER_FUEL, DEFAULT_MODIFIERS[CONF_MODIFIER_FUEL])),
+                    ): selector.TextSelector(),
+                    
                     vol.Optional(
                         CONF_MAPPING_OIL,
                         default=str(options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL])),
                     ): selector.TextSelector(),
                     vol.Optional(
+                        CONF_MODIFIER_OIL,
+                        default=str(options.get(CONF_MODIFIER_OIL, DEFAULT_MODIFIERS[CONF_MODIFIER_OIL])),
+                    ): selector.TextSelector(),
+                    
+                    vol.Optional(
                         CONF_MAPPING_DTC,
                         default=str(options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_DTC,
+                        default=str(options.get(CONF_MODIFIER_DTC, DEFAULT_MODIFIERS[CONF_MODIFIER_DTC])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -250,8 +269,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_DOOR_FL,
-                        default=str(options.get(CONF_MASK_DOOR_FL, DEFAULT_MASKS[CONF_MASK_DOOR_FL])),
+                        CONF_MODIFIER_DOOR_FL,
+                        default=str(options.get(CONF_MODIFIER_DOOR_FL, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_FL])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -259,8 +278,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_DOOR_FR,
-                        default=str(options.get(CONF_MASK_DOOR_FR, DEFAULT_MASKS[CONF_MASK_DOOR_FR])),
+                        CONF_MODIFIER_DOOR_FR,
+                        default=str(options.get(CONF_MODIFIER_DOOR_FR, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_FR])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -268,8 +287,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_DOOR_RL,
-                        default=str(options.get(CONF_MASK_DOOR_RL, DEFAULT_MASKS[CONF_MASK_DOOR_RL])),
+                        CONF_MODIFIER_DOOR_RL,
+                        default=str(options.get(CONF_MODIFIER_DOOR_RL, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_RL])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -277,8 +296,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_DOOR_RR,
-                        default=str(options.get(CONF_MASK_DOOR_RR, DEFAULT_MASKS[CONF_MASK_DOOR_RR])),
+                        CONF_MODIFIER_DOOR_RR,
+                        default=str(options.get(CONF_MODIFIER_DOOR_RR, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_RR])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -286,8 +305,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_LOCKED,
-                        default=str(options.get(CONF_MASK_LOCKED, DEFAULT_MASKS[CONF_MASK_LOCKED])),
+                        CONF_MODIFIER_LOCKED,
+                        default=str(options.get(CONF_MODIFIER_LOCKED, DEFAULT_MODIFIERS[CONF_MODIFIER_LOCKED])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -295,8 +314,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_WINDOWS,
-                        default=str(options.get(CONF_MASK_WINDOWS, DEFAULT_MASKS[CONF_MASK_WINDOWS])),
+                        CONF_MODIFIER_WINDOWS,
+                        default=str(options.get(CONF_MODIFIER_WINDOWS, DEFAULT_MODIFIERS[CONF_MODIFIER_WINDOWS])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -304,8 +323,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_HANDBRAKE,
-                        default=str(options.get(CONF_MASK_HANDBRAKE, DEFAULT_MASKS[CONF_MASK_HANDBRAKE])),
+                        CONF_MODIFIER_HANDBRAKE,
+                        default=str(options.get(CONF_MODIFIER_HANDBRAKE, DEFAULT_MODIFIERS[CONF_MODIFIER_HANDBRAKE])),
                     ): selector.TextSelector(),
                     
                     vol.Optional(
@@ -313,8 +332,8 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         default=str(options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS])),
                     ): selector.TextSelector(),
                     vol.Optional(
-                        CONF_MASK_LIGHTS,
-                        default=str(options.get(CONF_MASK_LIGHTS, DEFAULT_MASKS[CONF_MASK_LIGHTS])),
+                        CONF_MODIFIER_LIGHTS,
+                        default=str(options.get(CONF_MODIFIER_LIGHTS, DEFAULT_MODIFIERS[CONF_MODIFIER_LIGHTS])),
                     ): selector.TextSelector(),
                 }
             ),

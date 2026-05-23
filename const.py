@@ -21,27 +21,30 @@ DEFAULT_LISTENER_PORT = 5027
 DEFAULT_USE_SSL = True
 
 CONF_MAPPING_RPM = "map_rpm"
+CONF_MODIFIER_RPM = "mod_rpm"
 CONF_MAPPING_FUEL = "map_fuel"
+CONF_MODIFIER_FUEL = "mod_fuel"
 CONF_MAPPING_OIL = "map_oil"
+CONF_MODIFIER_OIL = "mod_oil"
 CONF_MAPPING_DTC = "map_dtc"
-CONF_MAPPING_DOOR_FL = "map_door_fl"
-CONF_MAPPING_DOOR_FR = "map_door_fr"
-CONF_MAPPING_DOOR_RL = "map_door_rl"
-CONF_MAPPING_DOOR_RR = "map_door_rr"
-CONF_MAPPING_LOCKED = "map_locked"
-CONF_MAPPING_WINDOWS = "map_windows"
-CONF_MAPPING_HANDBRAKE = "map_handbrake"
-CONF_MAPPING_LIGHTS = "map_lights"
+CONF_MODIFIER_DTC = "mod_dtc"
 
-# Bitmask Constants
-CONF_MASK_DOOR_FL = "mask_door_fl"
-CONF_MASK_DOOR_FR = "mask_door_fr"
-CONF_MASK_DOOR_RL = "mask_door_rl"
-CONF_MASK_DOOR_RR = "mask_door_rr"
-CONF_MASK_LOCKED = "mask_locked"
-CONF_MASK_WINDOWS = "mask_windows"
-CONF_MASK_HANDBRAKE = "mask_handbrake"
-CONF_MASK_LIGHTS = "mask_lights"
+CONF_MAPPING_DOOR_FL = "map_door_fl"
+CONF_MODIFIER_DOOR_FL = "mod_door_fl"
+CONF_MAPPING_DOOR_FR = "map_door_fr"
+CONF_MODIFIER_DOOR_FR = "mod_door_fr"
+CONF_MAPPING_DOOR_RL = "map_door_rl"
+CONF_MODIFIER_DOOR_RL = "mod_door_rl"
+CONF_MAPPING_DOOR_RR = "map_door_rr"
+CONF_MODIFIER_DOOR_RR = "mod_door_rr"
+CONF_MAPPING_LOCKED = "map_locked"
+CONF_MODIFIER_LOCKED = "mod_locked"
+CONF_MAPPING_WINDOWS = "map_windows"
+CONF_MODIFIER_WINDOWS = "mod_windows"
+CONF_MAPPING_HANDBRAKE = "map_handbrake"
+CONF_MODIFIER_HANDBRAKE = "mod_handbrake"
+CONF_MAPPING_LIGHTS = "map_lights"
+CONF_MODIFIER_LIGHTS = "mod_lights"
 
 DEFAULT_MAPPINGS = {
     CONF_MAPPING_RPM: "85",
@@ -58,13 +61,17 @@ DEFAULT_MAPPINGS = {
     CONF_MAPPING_LIGHTS: "331",
 }
 
-DEFAULT_MASKS = {
-    CONF_MASK_DOOR_FL: "0x01",
-    CONF_MASK_DOOR_FR: "0x02",
-    CONF_MASK_DOOR_RL: "0x04",
-    CONF_MASK_DOOR_RR: "0x08",
-    CONF_MASK_LOCKED: "0x1E",
-    CONF_MASK_WINDOWS: "",
-    CONF_MASK_HANDBRAKE: "",
-    CONF_MASK_LIGHTS: "",
+DEFAULT_MODIFIERS = {
+    CONF_MODIFIER_RPM: "",
+    CONF_MODIFIER_FUEL: "",
+    CONF_MODIFIER_OIL: "",
+    CONF_MODIFIER_DTC: "",
+    CONF_MODIFIER_DOOR_FL: "&0x01",
+    CONF_MODIFIER_DOOR_FR: "&0x02",
+    CONF_MODIFIER_DOOR_RL: "&0x04",
+    CONF_MODIFIER_DOOR_RR: "&0x08",
+    CONF_MODIFIER_LOCKED: "&0x1E",
+    CONF_MODIFIER_WINDOWS: "",
+    CONF_MODIFIER_HANDBRAKE: "",
+    CONF_MODIFIER_LIGHTS: "",
 }

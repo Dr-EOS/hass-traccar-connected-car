@@ -156,20 +156,22 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
         if raw is None:
             return None
 
-        # Apply bitmask if defined
-        if self.entity_description.bitmask is not None:
-            try:
-                # For "Locked" sensor, we check if all bits in mask are 1
-                if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
-                    val = (int(raw) & self.entity_description.bitmask) == self.entity_description.bitmask
-                else:
-                    val = bool(int(raw) & self.entity_description.bitmask)
-            except (ValueError, TypeError):
-                val = bool(raw)
-        else:
-            val = bool(raw)
+        # Apply modifier
+        val = apply_modifier(raw, self.entity_description.modifier)
 
         # Home Assistant LOCK device class: ON = Unlocked, OFF = Locked
+        if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
+            # If modifier is a bitmask, we check if all bits are set
+            if self.entity_description.modifier and self.entity_description.modifier.startswith("&"):
+                mask = parse_int_value(self.entity_description.modifier[1:])
+                if mask is not None:
+                    is_locked = (int(raw) & mask) == mask
+                    return not is_locked
+            
+            return not bool(val)
+
+        return bool(val)
+ass: ON = Unlocked, OFF = Locked
         if self.entity_description.device_class == BinarySensorDeviceClass.LOCK:
             return not val
 

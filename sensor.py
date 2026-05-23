@@ -201,6 +201,18 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
             except (ValueError, TypeError):
                 return None
 
+        return apply_modifier(raw, self.entity_description.modifier)
+y)
+
+        if raw is None:
+            return None
+
+        if self.entity_description.device_class == SensorDeviceClass.TIMESTAMP:
+            try:
+                return dt_util.parse_datetime(str(raw))
+            except (ValueError, TypeError):
+                return None
+
         try:
             return raw * self.entity_description.factor
         except (TypeError, ValueError):

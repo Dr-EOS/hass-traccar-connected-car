@@ -25,3 +25,30 @@ def parse_int_value(value: Any) -> int | None:
     except (ValueError, TypeError):
         _LOGGER.error("Failed to parse integer value: %s", value)
         return None
+
+def apply_modifier(value: Any, modifier: str | None) -> Any:
+    """Apply a modifier string (*factor or &mask) to a value."""
+    if value is None:
+        return None
+    
+    if not modifier or not isinstance(modifier, str):
+        return value
+        
+    mod = modifier.strip()
+    if not mod:
+        return value
+
+    try:
+        if mod.startswith("*"):
+            factor = float(mod[1:])
+            return value * factor
+        
+        if mod.startswith("&"):
+            mask_val = parse_int_value(mod[1:])
+            if mask_val is not None:
+                return value & mask_val
+                
+    except (ValueError, TypeError) as err:
+        _LOGGER.error("Error applying modifier %s to value %s: %s", modifier, value, err)
+        
+    return value
