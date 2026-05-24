@@ -7,6 +7,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -68,18 +69,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     # Initialize domain data
     hass.data.setdefault(DOMAIN, {"servers": {}})
 
-    # State storage for push data
-    entry_data = {
-        "devices": [{
-            "id": entry.entry_id,
-            "name": entry.data[CONF_DEVICE_NAME],
-            "uniqueId": entry.data[CONF_IMEI],
-            "model": "FMC130"
-        }],
-        "positions": {
-            entry.entry_id: {"deviceId": entry.entry_id, "attributes": {}}
+    # Setup storage for persistent state
+    store = Store(hass, 1, f"{DOMAIN}_{entry.entry_id}")
+    loaded_data = await store.async_load()
+
+    if loaded_data:
+        entry_data = loaded_data
+    else:
+        # State storage for push data
+        entry_data = {
+            "devices": [{
+                "id": entry.entry_id,
+                "name": entry.data[CONF_DEVICE_NAME],
+                "uniqueId": entry.data[CONF_IMEI],
+                "model": "FMC130"
+            }],
+            "positions": {
+                entry.entry_id: {"deviceId": entry.entry_id, "attributes": {}}
+            }
         }
-    }
 
     async def async_update_data():
         """No polling, just return current state."""
@@ -154,6 +162,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
         pos["fixTime"] = dt_util.utcnow().isoformat()
         
         coordinator.async_set_updated_data(entry_data)
+        # Delay save to avoid writing to disk on every quick payload
+        store.async_delay_save(lambda: entry_data, 5.0)
 
     # Start or Get Direct Listener
     port = entry.data.get(CONF_LISTENER_PORT, 5027)
