@@ -181,9 +181,9 @@ class TeltonikaProtocol(asyncio.Protocol):
                         offset += size
             
             elif codec_id == 0x8E: # Codec 8 Extended
-                if len(data) < offset + 2: break
-                # Event ID (2 bytes)
-                offset += 2
+                if len(data) < offset + 4: break
+                # Event ID (2 bytes) + Total IO Count (2 bytes)
+                offset += 4
                 
                 for size in [1, 2, 4, 8]:
                     if len(data) < offset + 2: break
@@ -198,6 +198,21 @@ class TeltonikaProtocol(asyncio.Protocol):
                         if val is not None:
                             self._map_io(last_extracted_data, io_id, val)
                         offset += size
+                
+                # NX variable length elements
+                if len(data) >= offset + 2:
+                    nx_elements = struct.unpack(">H", data[offset:offset+2])[0]
+                    offset += 2
+                    for _ in range(nx_elements):
+                        if len(data) < offset + 4: break
+                        io_id = struct.unpack(">H", data[offset:offset+2])[0]
+                        offset += 2
+                        val_len = struct.unpack(">H", data[offset:offset+2])[0]
+                        offset += 2
+                        if len(data) < offset + val_len: break
+                        # We currently don't map variable length data, just skip it
+                        offset += val_len
+
 
         # Final ACK records check
         if len(data) > offset and data[offset] != num_records:

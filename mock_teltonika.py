@@ -4,14 +4,24 @@ import time
 import sys
 import os
 import argparse
+import ssl
 
-def send_payloads(host, port, imei, payloads, interval=1.0, loop=False):
+def send_payloads(host, port, imei, payloads, interval=1.0, loop=False, use_ssl=False):
     """Connect to server and send payloads."""
     try:
         while True:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            if use_ssl:
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+                s = context.wrap_socket(raw_sock, server_hostname=host)
+            else:
+                s = raw_sock
+
+            with s:
                 s.connect((host, port))
-                print(f"Connected to {host}:{port}")
+                print(f"Connected to {host}:{port} {'(SSL)' if use_ssl else '(Plain)'}")
 
                 # 1. IMEI Handshake
                 # 2 bytes length + IMEI
@@ -72,6 +82,7 @@ def main():
     parser.add_argument("-t", "--interval", type=float, default=1.0, help="Interval between payloads in seconds (default: 1.0)")
     parser.add_argument("-l", "--loop", action="store_true", help="Loop the payloads indefinitely")
     parser.add_argument("-s", "--single", help="Send a single hex payload string and exit")
+    parser.add_argument("--ssl", action="store_true", help="Use SSL for connection")
 
     args = parser.parse_args()
 
@@ -96,9 +107,9 @@ def main():
         sys.exit(1)
 
     print(f"Starting mock Teltonika sender for IMEI {args.imei}")
-    print(f"Target: {args.host}:{args.port}, Interval: {args.interval}s, Loop: {args.loop}")
+    print(f"Target: {args.host}:{args.port}, Interval: {args.interval}s, Loop: {args.loop}, SSL: {args.ssl}")
     
-    send_payloads(args.host, args.port, args.imei, payloads, args.interval, args.loop)
+    send_payloads(args.host, args.port, args.imei, payloads, args.interval, args.loop, args.ssl)
 
 if __name__ == "__main__":
     main()
