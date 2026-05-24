@@ -264,21 +264,6 @@ class TeltonikaProtocol(asyncio.Protocol):
             data["odometer"] = val
         elif io_id == 87: # Total Mileage
             data["totalDistance"] = val
-        elif io_id == 320: # CAN Doors
-            data["doorFrontLeft"] = bool(val & 0x01)
-            data["doorFrontRight"] = bool(val & 0x02)
-            data["doorRearLeft"] = bool(val & 0x04)
-            data["doorRearRight"] = bool(val & 0x08)
-            data["trunk"] = bool(val & 0x10)
-            data["bonnet"] = bool(val & 0x20)
-        elif io_id == 321: # CAN Security
-            data["locked"] = bool((val & 0x1E) == 0x1E)
-        elif io_id == 327: # Handbrake
-            data["handbrake"] = bool(val)
-        elif io_id == 331: # Lights
-            data["lights"] = bool(val)
-        elif io_id == 324: # Windows
-            data["windows"] = bool(val)
         else:
             # Check dynamic mappings
             if io_id not in self.server.get_mappings(self.imei):
