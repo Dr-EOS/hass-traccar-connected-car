@@ -35,7 +35,7 @@ Configure your Teltonika device (via Configurator or SMS) with:
 ### Integration Setup:
 The **Direct Listener** is configured during setup:
 - **Friendly Name:** A name for your vehicle.
-- **IMEI:** The 15-digit IMEI of the device.
+- **IMEI:** The IMEI of the device. It **must be a 15-digit integer value". All other values (less or more digits, characters etc.) are discarded.
 - **Port:** Default is `5027`.
 - **TLS Mode:**
     - **Disabled:** Plain TCP (unencrypted).
@@ -45,7 +45,7 @@ The **Direct Listener** is configured during setup:
 
 ### Advanced Mappings (Options Flow):
 You can customize the Teltonika IO ID mappings (refer to 3. Features & Sensors) via the **Configure** button:
-- Each line contains input fields: IO ID, modifier field, unit
+- Each line contains input fields: IO ID, type, modifier field, unit
 - If a certain Teltonika IO ID is not supported by your car, leave the IO ID field blank to disable it.
 - The IO ID field maps specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors. It accepts integer numbers or hex numbers (starting with 0x).
 - The modifier field can be used to apply either scaling factors (e.g. '*0.1' or bitmask logic (e.g. '&0x0F')
@@ -65,34 +65,40 @@ The integration automatically creates entities based on the configured IMEI.
 - **Power & Satellites:** Diagnostic monitoring.
 
 ### CAN Bus Telemetry
+-**Supported IO ID Types:** the type value is case insensitive and one of the following values:
+- "Value": Represent numbers which can be measurement values (floating point or integer values). The "Modifier" can be used to scale the received value (e.g. if "total distance" is sent in meters, use a modifier "*0.001" to calculate the distance in km). If no modifier is specified, the received values is treated as-is (no scaling is applied).
+- "Indicator": Such indicators are used to transmit a certain status such as door open. The FMC130 sends either a 0 (status condition not met) or 1 (status condition active, e.g. a certain door is open). Indicators can be used in the UI to either show individual status' (for each door), an aggregation over a number of indicators (such as "All doors cloded") or only show the status of an active indicator ("front left door open", but omit all closed doors).
+- "Warning": A warning is a specialised form of an indicator and correspond to indicator lights in your car's dashoard. They are utilized as heads-up to signalize a warning state of your car (check engine, oil level low, coolant liquid level low, low tire pressure, such as coolant overtemperature, ...). The FMC130 sends either a 0 (indicator light off = status okay) or 1 (the corresponding indicator light is on = a warning is shown). Equivalent to its utilization in the car's dashboard, warning indicators are usually only shown to the driver if a warning indicator is active (value of 1). If a dedicated car status page exists, usually all warning indicators are listed with either status "OK" or a meaninfull warning "Coolant level low".
+- "Enum": Enums are used to represent a predefined set of possible states. The FMC130 sends intger values which can be used to map 1 of n exclusive or states (such as 0=No Sleep, 1=GPS Sleep, 2=Deep Sleep, 3=Online Sleep, 4=Ultra Sleep).
+
 -**Default IO IDs:**
-IO ID,Name,Scaling,Unit
-66,External Voltage,0.001,V
-81,Vehicle Speed,,km/h
-84,Fuel Level,0.1,l
-87,Total Mileage,0.001,km/h
-115,Engine Temperature,0.1,°C
-200,Sleep Mode,,
-235,Oil Level Indicator,,
-239,Ignition,,
-240,Movement Indicator,,
-654,Front Left Door Open,,
-655,Front Right Door Open,,
-658,Trunk Door Open,,
-662,Car Is Closed,,
-866,Vehicle Range,,km
-913,Engine Cover Open,,
-953,Check Engine Indicator,,
-958,Oil Level Indicator,,
-959,Coolant liquid level Indicator,,
-960,Battery Not Charging Indicator,,
-964,Warning Indicator,,
-965,Lights Failure Indicator,,
-966,Low Tire Pressure Indicator,,
-967,Wear Of Brake Pads Indicator,,
-968,Low Fuel Level Indicator,,
-969,Maintenence required Indicator,,
-976,Low Coolant Level Indicator,,
+IO ID,Name,Type, Modifier,Unit
+66,External Voltage, Value, *0.001,V
+81,Vehicle Speed,Value,,km/h
+84,Fuel Level,Value, *0.1,l
+87,Total Mileage,Value, *0.001,km/h
+115,Engine Temperature,Value, *0.1,°C
+200,Sleep Mode,Enum,,,
+235,Oil Level Indicator,Warning,,,
+239,Ignition,Indicator,,,
+240,Movement Indicator,Indicator,,,
+654,Front Left Door Open,Indicator,,,
+655,Front Right Door Open,Indicator,,,
+658,Trunk Door Open,Indicator,,,
+662,Car Is Closed,Indicator,,,
+866,Vehicle Range,Value,,km
+913,Engine Cover Open,Indicator,,,
+953,Check Engine Indicator,Warning,,,
+958,Oil Level Indicator,Warning,,,
+959,Coolant liquid level Indicator,Warning,,,
+960,Battery Not Charging Indicator,Warning,,,
+964,Warning Indicator,Warning,,,
+965,Lights Failure Indicator,Warning,,,
+966,Low Tire Pressure Indicator,Warning,,,
+967,Wear Of Brake Pads Indicator,Warning,,,
+968,Low Fuel Level Indicator,Warning,,,
+969,Maintenence required Indicator,Warning,,,
+976,Low Coolant Level Indicator,Warning,,,
 - **Logs:** Real-time protocol event log sensor showing connections and raw data info.
 
 ---
@@ -113,3 +119,11 @@ The integration provides extensive debug information which can be enabled in the
 3. Go to **Settings → Devices & Services → Add Integration**.
 4. Search for **"Teltonika FMC130 Connected Car"**.
 5. Enter your device details and select your preferred **TLS Mode**.
+
+---
+
+## 6. Development & Security
+
+For developers and security-conscious users, please refer to the following supplementary documentation:
+- [SECURITY.md](SECURITY.md): Details on the security architecture, threat model, and past reviews (e.g., DoS protection, memory safety, TLS handling).
+- [Test_Spec.md](Test_Spec.md): Comprehensive instructions on how to test the integration using the provided mock scripts and sample payloads.
