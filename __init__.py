@@ -147,7 +147,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
                         _LOGGER.info(msg)
         
         # Extract location and common GPS fields if present
-        for field in ["latitude", "longitude", "altitude", "angle", "sat", "speed"]:
+        for field in ["latitude", "longitude", "altitude", "angle", "sat", "speed", "ignition", "motion", "power", "battery", "batteryLevel", "odometer", "totalDistance"]:
             if field in data:
                 pos[field] = data.pop(field)
             
