@@ -8,7 +8,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorDeviceClass,
 )
-from homeassistant.const import UnitOfLength, UnitOfSpeed, UnitOfElectricPotential
+from homeassistant.const import UnitOfLength, UnitOfSpeed, UnitOfElectricPotential, UnitOfTemperature
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.entity import DeviceInfo
@@ -46,6 +46,27 @@ SENSORS: list[Fmc130SensorDescription] = [
         name="Total Distance",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
         modifier="*0.001",
+    ),
+    Fmc130SensorDescription(
+        key=81,
+        name="Vehicle Speed",
+        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
+    ),
+    Fmc130SensorDescription(
+        key=115,
+        name="Engine Temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        modifier="*0.1",
+    ),
+    Fmc130SensorDescription(
+        key=200,
+        name="Sleep Mode",
+        device_class=SensorDeviceClass.ENUM,
+    ),
+    Fmc130SensorDescription(
+        key=866,
+        name="Vehicle Range",
+        native_unit_of_measurement=UnitOfLength.KILOMETERS,
     ),
     Fmc130SensorDescription(
         key="power",

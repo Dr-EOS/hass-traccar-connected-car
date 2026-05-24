@@ -46,6 +46,66 @@ BINARY_SENSORS: list[Fmc130BinarySensorDescription] = [
         name="Ignition", 
         device_class=BinarySensorDeviceClass.POWER
     ),
+    Fmc130BinarySensorDescription(
+        key=658,
+        name="Trunk Door Open",
+        device_class=BinarySensorDeviceClass.DOOR
+    ),
+    Fmc130BinarySensorDescription(
+        key=913,
+        name="Engine Cover Open",
+        device_class=BinarySensorDeviceClass.DOOR
+    ),
+    Fmc130BinarySensorDescription(
+        key=953,
+        name="Check Engine Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=958,
+        name="Oil Level Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=959,
+        name="Coolant liquid level Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=960,
+        name="Battery Not Charging Indicator",
+        device_class=BinarySensorDeviceClass.BATTERY
+    ),
+    Fmc130BinarySensorDescription(
+        key=964,
+        name="Warning Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=966,
+        name="Low Tire Pressure Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=967,
+        name="Wear Of Brake Pads Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=968,
+        name="Low Fuel Level Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=969,
+        name="Maintenence required Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
+        key=976,
+        name="Low Coolant Level Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
 ]
 
 async def async_setup_entry(hass, entry, async_add_entities):
