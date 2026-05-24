@@ -36,12 +36,6 @@ class Fmc130SensorDescription(SensorEntityDescription):
 
 SENSORS: list[Fmc130SensorDescription] = [
     Fmc130SensorDescription(
-        key="odometer",
-        name="Odometer",
-        native_unit_of_measurement=UnitOfLength.KILOMETERS,
-        modifier="*0.001",
-    ),
-    Fmc130SensorDescription(
         key="totalDistance",
         name="Total Distance",
         native_unit_of_measurement=UnitOfLength.KILOMETERS,
@@ -103,7 +97,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     
     mappings = [
         (CONF_MAPPING_RPM, CONF_MODIFIER_RPM, "RPM", "rpm"),
-        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL, "Fuel Level", "%"),
+        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL, "Fuel Level", "l"),
         (CONF_MAPPING_DTC, CONF_MODIFIER_DTC, "DTC Codes", None),
     ]
     

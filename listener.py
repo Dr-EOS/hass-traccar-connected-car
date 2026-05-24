@@ -267,8 +267,6 @@ class TeltonikaProtocol(asyncio.Protocol):
             data["batteryLevel"] = val
         elif io_id == 24: # Speed (GNSS)
             data["speed"] = val
-        elif io_id == 16: # Odometer
-            data["odometer"] = val
         elif io_id == 87: # Total Mileage
             data["totalDistance"] = val
         else:

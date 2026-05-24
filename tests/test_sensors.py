@@ -96,8 +96,8 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     lock_state = hass.states.get("binary_sensor.test_vehicle_locked")
     assert lock_state.state == STATE_ON # Unlocked
 
-    # Test scaling modifier (*0.001 for odometer)
-    callback("123456789012345", {"odometer": 1234567}) # 1234567 meters -> 1234.567 km
+    # Test scaling modifier (*0.001 for totalDistance)
+    callback("123456789012345", {"totalDistance": 1234567}) # 1234567 meters -> 1234.567 km
     await hass.async_block_till_done()
-    odo_state = hass.states.get("sensor.test_vehicle_odometer")
+    odo_state = hass.states.get("sensor.test_vehicle_total_distance")
     assert odo_state.state == "1234.567"

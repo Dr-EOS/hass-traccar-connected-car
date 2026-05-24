@@ -118,7 +118,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
             io_modifiers.setdefault(io_id, []).append(modifier)
     
     # Standard modifiers
-    io_modifiers.setdefault(16, ["*0.001"]) # Odometer
     io_modifiers.setdefault(87, ["*0.001"]) # Total Mileage
     io_modifiers.setdefault(66, ["*0.001"]) # External Voltage
     io_modifiers.setdefault(67, ["*0.001"]) # Battery Voltage
@@ -147,7 +146,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
                         _LOGGER.info(msg)
         
         # Extract location and common GPS fields if present
-        for field in ["latitude", "longitude", "altitude", "angle", "sat", "speed", "ignition", "motion", "power", "battery", "batteryLevel", "odometer", "totalDistance"]:
+        for field in ["latitude", "longitude", "altitude", "angle", "sat", "speed", "ignition", "motion", "power", "battery", "batteryLevel", "totalDistance"]:
             if field in data:
                 pos[field] = data.pop(field)
             
