@@ -48,13 +48,20 @@ class TeltonikaProtocol(asyncio.Protocol):
                 return
             
             imei_len = struct.unpack(">H", self.buffer[:2])[0]
+            
+            # Security: Sanity check IMEI length to prevent buffer overflow attacks
+            if imei_len == 0 or imei_len > 100:
+                _LOGGER.warning("Invalid IMEI length (%d) from %s. Closing connection.", imei_len, self._peername)
+                self.transport.close()
+                return
+                
             if len(self.buffer) < 2 + imei_len:
                 return
             
             try:
                 self.imei = self.buffer[2:2+imei_len].decode("ascii")
             except UnicodeDecodeError:
-                _LOGGER.error("Invalid IMEI received from %s", self._peername)
+                _LOGGER.error("Invalid IMEI encoding received from %s", self._peername)
                 self.transport.close()
                 return
 
@@ -80,10 +87,10 @@ class TeltonikaProtocol(asyncio.Protocol):
                 
                 data_len = struct.unpack(">I", self.buffer[4:8])[0]
                 
-                # Sanity check for data length
-                if data_len > 2048:
-                    _LOGGER.warning("Packet length too large (%d), clearing buffer", data_len)
-                    self.buffer.clear()
+                # Security: Sanity check for data length to prevent memory exhaustion
+                if data_len > 8192:
+                    _LOGGER.warning("Packet length too large (%d) from %s, closing connection.", data_len, self.imei)
+                    self.transport.close()
                     return
 
                 if len(self.buffer) < 8 + data_len + 4: # Header + Data + CRC
