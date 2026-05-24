@@ -82,6 +82,11 @@ BINARY_SENSORS: list[Fmc130BinarySensorDescription] = [
         device_class=BinarySensorDeviceClass.PROBLEM
     ),
     Fmc130BinarySensorDescription(
+        key=965,
+        name="Lights Failure Indicator",
+        device_class=BinarySensorDeviceClass.PROBLEM
+    ),
+    Fmc130BinarySensorDescription(
         key=966,
         name="Low Tire Pressure Indicator",
         device_class=BinarySensorDeviceClass.PROBLEM
@@ -146,6 +151,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
         (CONF_MAPPING_WINDOWS, CONF_MODIFIER_WINDOWS, "Windows", BinarySensorDeviceClass.WINDOW),
         (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE, "Handbrake", None),
         (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
+        (CONF_MAPPING_OIL, CONF_MODIFIER_OIL, "Oil Level Indicator", BinarySensorDeviceClass.PROBLEM),
     ]
     
     for map_key, mod_key, name, dev_class in other_mappings:

@@ -58,7 +58,7 @@ DEFAULT_MAPPINGS = {
     CONF_MAPPING_LOCKED: "662",
     CONF_MAPPING_WINDOWS: "", # Varies widely, let user configure if present
     CONF_MAPPING_HANDBRAKE: "653",
-    CONF_MAPPING_LIGHTS: "965", # Lights Failure
+    CONF_MAPPING_LIGHTS: "", # Varies widely
 }
 
 DEFAULT_MODIFIERS = {

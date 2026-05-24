@@ -61,7 +61,6 @@ SENSORS: list[Fmc130SensorDescription] = [
     Fmc130SensorDescription(
         key=200,
         name="Sleep Mode",
-        device_class=SensorDeviceClass.ENUM,
     ),
     Fmc130SensorDescription(
         key=866,
@@ -105,7 +104,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
     mappings = [
         (CONF_MAPPING_RPM, CONF_MODIFIER_RPM, "RPM", "rpm"),
         (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL, "Fuel Level", "%"),
-        (CONF_MAPPING_OIL, CONF_MODIFIER_OIL, "Oil Level", None),
         (CONF_MAPPING_DTC, CONF_MODIFIER_DTC, "DTC Codes", None),
     ]
     
