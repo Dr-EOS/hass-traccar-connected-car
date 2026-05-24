@@ -45,12 +45,11 @@ The **Direct Listener** is configured during setup:
 
 ### Advanced Mappings (Options Flow):
 You can customize the Teltonika IO ID mappings (refer to 3. Features & Sensors) via the **Configure** button:
-- Each line contains input fields: IO ID, type, modifier field, unit
-- If a certain Teltonika IO ID is not supported by your car, leave the IO ID field blank to disable it.
+- Each line of the config dialog contains 4 input fields: IO ID, type, modifier field, unit
+- If a certain Teltonika IO ID is not supported by your car, leave the IO ID field blank to disable it. It won't be shown in Home Assistent then.
 - The IO ID field maps specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors. It accepts integer numbers or hex numbers (starting with 0x).
 - The modifier field can be used to apply either scaling factors (e.g. '*0.1' or bitmask logic (e.g. '&0x0F')
 - Binary sensors for doors and security use bitmask logic on the configured IO IDs. The bitmask field accepts hex or binary notation (starting with 0b).
-
 
 ---
 
@@ -99,6 +98,11 @@ IO ID,Name,Type, Modifier,Unit
 968,Low Fuel Level Indicator,Warning,,,
 969,Maintenence required Indicator,Warning,,,
 976,Low Coolant Level Indicator,Warning,,,
+
+-**Data continuity:**
+If your Teltonika GPS module does not send the full set of IO IDs every time, all newly received IO IDs are updated with the received payload. 
+For those IO IDs which were not updated, the last known value is kept until a new value is received. This ensures that gaps do not lead to "unknown" values.
+
 - **Logs:** Real-time protocol event log sensor showing connections and raw data info.
 
 ---
