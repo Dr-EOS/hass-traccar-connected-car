@@ -198,9 +198,15 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
 
         attrs = pos.get("attributes", {})
         raw = attrs.get(self.entity_description.key)
+        
+        if raw is None:
+            raw = attrs.get(str(self.entity_description.key))
 
         if raw is None:
             raw = pos.get(self.entity_description.key)
+            
+        if raw is None:
+            raw = pos.get(str(self.entity_description.key))
 
         if raw is None:
             return None

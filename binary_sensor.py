@@ -190,8 +190,15 @@ class Fmc130AggregatedBinarySensor(CoordinatorEntity, BinarySensorEntity):
         for desc in self._descriptions:
             attrs = pos.get("attributes", {})
             raw = attrs.get(desc.key)
+            
+            if raw is None:
+                raw = attrs.get(str(desc.key))
+
             if raw is None:
                 raw = pos.get(desc.key)
+                
+            if raw is None:
+                raw = pos.get(str(desc.key))
 
             if raw is not None:
                 all_none = False
@@ -266,7 +273,13 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
         raw = attrs.get(self.entity_description.key)
         
         if raw is None:
+            raw = attrs.get(str(self.entity_description.key))
+
+        if raw is None:
             raw = pos.get(self.entity_description.key)
+            
+        if raw is None:
+            raw = pos.get(str(self.entity_description.key))
 
         if raw is None:
             return None
