@@ -57,6 +57,13 @@ class Fmc130DeviceTracker(CoordinatorEntity, TrackerEntity):
         )
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if not self.coordinator.data:
+            return False
+        return self._device["id"] in self.coordinator.data.get("positions", {})
+
+    @property
     def source_type(self) -> SourceType:
         """Return the source type."""
         return SourceType.GPS

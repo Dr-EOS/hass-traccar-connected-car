@@ -138,6 +138,11 @@ class Fmc130LogSensor(CoordinatorEntity, SensorEntity):
         )
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        return True
+
+    @property
     def native_value(self) -> str | None:
         """Return the last log entry."""
         if self._server and self._server.events:
@@ -173,6 +178,13 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
             manufacturer="Teltonika",
             model=self._device.get("model", "FMC130"),
         )
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if not self.coordinator.data:
+            return False
+        return self._device["id"] in self.coordinator.data.get("positions", {})
 
     @property
     def native_value(self) -> StateType | dt_util.dt.datetime:

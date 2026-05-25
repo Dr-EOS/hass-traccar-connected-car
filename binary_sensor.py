@@ -141,6 +141,13 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
         )
 
     @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if not self.coordinator.data:
+            return False
+        return self._device["id"] in self.coordinator.data.get("positions", {})
+
+    @property
     def is_on(self) -> bool | None:
         """Return true if the binary sensor is on."""
         if not self.coordinator.data:
