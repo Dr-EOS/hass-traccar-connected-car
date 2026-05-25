@@ -7,7 +7,9 @@ This integration is specifically designed for the **Teltonika FMC130** (with CAN
 
 ## 1. Motivation & Architecture
 
-This integration offers a **Local Push** architecture, providing real-time telemetry with sub-second latency. It eliminates the need for any external tracking server.
+This integration offers an extended car tracking based on the Teltonika FMC130 + CAN-CONTROL hardware. Besides the geolocation, additional car properties and values such as total distance, engine temperature and more can be received. 
+Car indicators such as door open, coolant level low and others are also supported.
+**Local Push** architecture, providing real-time telemetry with sub-second latency. It eliminates the need for any external tracking server.
 
 ### Key Advantages:
 - **Push-Only:** No external API polling for telemetry. Data is pushed directly from the device.
@@ -44,12 +46,12 @@ The **Direct Listener** is configured during setup:
 - **Debug Mode:** This checkbox enables debug logging and prints incoming payload messages.
 
 ### Advanced Mappings (Options Flow):
-You can customize the Teltonika IO ID mappings (refer to 3. Features & Sensors) via the **Configure** button:
-- Each line of the config dialog contains 4 input fields: IO ID, type, modifier field, unit
-- If a certain Teltonika IO ID is not supported by your car, leave the IO ID field blank to disable it. It won't be shown in Home Assistent then.
-- The IO ID field maps specific hardware IO IDs (e.g., `85` for RPM, `83` for Fuel) to Home Assistant sensors. It accepts integer numbers or hex numbers (starting with 0x).
-- The modifier field can be used to apply either scaling factors (e.g. '*0.1' or bitmask logic (e.g. '&0x0F')
-- Binary sensors for doors and security use bitmask logic on the configured IO IDs. The bitmask field accepts hex or binary notation (starting with 0b).
+You can customize the mapping of Teltonika IO IDs to the car's sensors via the **Configure** button:
+- The configuration dialog allows you to configure the IO ID and a modifier for every supported vehicle parameter.
+- If a certain Teltonika IO ID is not supported by your car, leave the IO ID field blank to disable it. It won't be shown in Home Assistant.
+- The **IO ID** field maps specific hardware IO IDs (e.g., `85` for RPM, `84` for Fuel) to Home Assistant entities. It accepts integer numbers or hex numbers (starting with `0x`).
+- The **Modifier** field can be used to apply either scaling factors (e.g. `*0.1`) or bitmask logic (e.g. `&0x0F`).
+- Binary sensors for locks and complex states may use bitmask logic to determine their state.
 
 ---
 
@@ -62,6 +64,7 @@ The integration automatically creates entities based on the configured IMEI.
 - **Last Update:** A dedicated timestamp sensor showing the exact time of the last received telemetry.
 - **Ignition & Motion:** Instant status changes.
 - **Power & Satellites:** Diagnostic monitoring.
+- **Aggregated Status:** Automatically combines indicators to provide clean `All doors closed` and `No warnings` binary sensors.
 
 ### CAN Bus Telemetry
 -**Supported IO ID Types:** the type value is case insensitive and one of the following values:
