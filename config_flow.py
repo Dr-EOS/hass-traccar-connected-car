@@ -23,30 +23,38 @@ from .const import (
     TLS_MODE_HA,
     TLS_MODE_CUSTOM,
     DEFAULT_LISTENER_PORT,
-    CONF_MAPPING_RPM,
-    CONF_MAPPING_FUEL,
-    CONF_MAPPING_OIL,
-    CONF_MAPPING_DTC,
-    CONF_MAPPING_DOOR_FL,
-    CONF_MAPPING_DOOR_FR,
-    CONF_MAPPING_DOOR_RL,
-    CONF_MAPPING_DOOR_RR,
-    CONF_MAPPING_LOCKED,
-    CONF_MAPPING_WINDOWS,
-    CONF_MAPPING_HANDBRAKE,
-    CONF_MAPPING_LIGHTS,
-    CONF_MODIFIER_RPM,
-    CONF_MODIFIER_FUEL,
-    CONF_MODIFIER_OIL,
-    CONF_MODIFIER_DTC,
-    CONF_MODIFIER_DOOR_FL,
-    CONF_MODIFIER_DOOR_FR,
-    CONF_MODIFIER_DOOR_RL,
-    CONF_MODIFIER_DOOR_RR,
-    CONF_MODIFIER_LOCKED,
-    CONF_MODIFIER_WINDOWS,
-    CONF_MODIFIER_HANDBRAKE,
-    CONF_MODIFIER_LIGHTS,
+CONF_MAPPING_RPM,
+    CONF_MODIFIER_RPM,    CONF_MAPPING_FUEL,
+    CONF_MODIFIER_FUEL,    CONF_MAPPING_OIL,
+    CONF_MODIFIER_OIL,    CONF_MAPPING_DTC,
+    CONF_MODIFIER_DTC,    CONF_MAPPING_DOOR_FL,
+    CONF_MODIFIER_DOOR_FL,    CONF_MAPPING_DOOR_FR,
+    CONF_MODIFIER_DOOR_FR,    CONF_MAPPING_DOOR_RL,
+    CONF_MODIFIER_DOOR_RL,    CONF_MAPPING_DOOR_RR,
+    CONF_MODIFIER_DOOR_RR,    CONF_MAPPING_LOCKED,
+    CONF_MODIFIER_LOCKED,    CONF_MAPPING_WINDOWS,
+    CONF_MODIFIER_WINDOWS,    CONF_MAPPING_HANDBRAKE,
+    CONF_MODIFIER_HANDBRAKE,    CONF_MAPPING_LIGHTS,
+    CONF_MODIFIER_LIGHTS,    CONF_MAPPING_VOLTAGE,
+    CONF_MODIFIER_VOLTAGE,    CONF_MAPPING_SPEED,
+    CONF_MODIFIER_SPEED,    CONF_MAPPING_MILEAGE,
+    CONF_MODIFIER_MILEAGE,    CONF_MAPPING_ENGINE_TEMP,
+    CONF_MODIFIER_ENGINE_TEMP,    CONF_MAPPING_SLEEP_MODE,
+    CONF_MODIFIER_SLEEP_MODE,    CONF_MAPPING_IGNITION,
+    CONF_MODIFIER_IGNITION,    CONF_MAPPING_MOTION,
+    CONF_MODIFIER_MOTION,    CONF_MAPPING_TRUNK,
+    CONF_MODIFIER_TRUNK,    CONF_MAPPING_VEHICLE_RANGE,
+    CONF_MODIFIER_VEHICLE_RANGE,    CONF_MAPPING_ENGINE_COVER,
+    CONF_MODIFIER_ENGINE_COVER,    CONF_MAPPING_CHECK_ENGINE,
+    CONF_MODIFIER_CHECK_ENGINE,    CONF_MAPPING_COOLANT_LEVEL,
+    CONF_MODIFIER_COOLANT_LEVEL,    CONF_MAPPING_BATTERY_CHARGE,
+    CONF_MODIFIER_BATTERY_CHARGE,    CONF_MAPPING_WARNING,
+    CONF_MODIFIER_WARNING,    CONF_MAPPING_LOW_TIRE,
+    CONF_MODIFIER_LOW_TIRE,    CONF_MAPPING_WEAR_BRAKE,
+    CONF_MODIFIER_WEAR_BRAKE,    CONF_MAPPING_LOW_FUEL,
+    CONF_MODIFIER_LOW_FUEL,    CONF_MAPPING_MAINTENANCE,
+    CONF_MODIFIER_MAINTENANCE,    CONF_MAPPING_LOW_COOLANT,
+    CONF_MODIFIER_LOW_COOLANT,
     DEFAULT_MAPPINGS,
     DEFAULT_MODIFIERS,
 )
@@ -232,7 +240,7 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
             step_id="mapping",
             data_schema=vol.Schema(
                 {
-                    vol.Optional(
+vol.Optional(
                         CONF_MAPPING_RPM,
                         default=str(options.get(CONF_MAPPING_RPM, DEFAULT_MAPPINGS[CONF_MAPPING_RPM])),
                     ): selector.TextSelector(),
@@ -240,7 +248,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_RPM,
                         default=str(options.get(CONF_MODIFIER_RPM, DEFAULT_MODIFIERS[CONF_MODIFIER_RPM])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_FUEL,
                         default=str(options.get(CONF_MAPPING_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_FUEL])),
@@ -249,7 +256,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_FUEL,
                         default=str(options.get(CONF_MODIFIER_FUEL, DEFAULT_MODIFIERS[CONF_MODIFIER_FUEL])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_OIL,
                         default=str(options.get(CONF_MAPPING_OIL, DEFAULT_MAPPINGS[CONF_MAPPING_OIL])),
@@ -258,7 +264,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_OIL,
                         default=str(options.get(CONF_MODIFIER_OIL, DEFAULT_MODIFIERS[CONF_MODIFIER_OIL])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_DTC,
                         default=str(options.get(CONF_MAPPING_DTC, DEFAULT_MAPPINGS[CONF_MAPPING_DTC])),
@@ -267,7 +272,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_DTC,
                         default=str(options.get(CONF_MODIFIER_DTC, DEFAULT_MODIFIERS[CONF_MODIFIER_DTC])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_DOOR_FL,
                         default=str(options.get(CONF_MAPPING_DOOR_FL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FL])),
@@ -276,7 +280,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_DOOR_FL,
                         default=str(options.get(CONF_MODIFIER_DOOR_FL, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_FL])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_DOOR_FR,
                         default=str(options.get(CONF_MAPPING_DOOR_FR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_FR])),
@@ -285,7 +288,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_DOOR_FR,
                         default=str(options.get(CONF_MODIFIER_DOOR_FR, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_FR])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_DOOR_RL,
                         default=str(options.get(CONF_MAPPING_DOOR_RL, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RL])),
@@ -294,7 +296,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_DOOR_RL,
                         default=str(options.get(CONF_MODIFIER_DOOR_RL, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_RL])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_DOOR_RR,
                         default=str(options.get(CONF_MAPPING_DOOR_RR, DEFAULT_MAPPINGS[CONF_MAPPING_DOOR_RR])),
@@ -303,7 +304,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_DOOR_RR,
                         default=str(options.get(CONF_MODIFIER_DOOR_RR, DEFAULT_MODIFIERS[CONF_MODIFIER_DOOR_RR])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_LOCKED,
                         default=str(options.get(CONF_MAPPING_LOCKED, DEFAULT_MAPPINGS[CONF_MAPPING_LOCKED])),
@@ -312,7 +312,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_LOCKED,
                         default=str(options.get(CONF_MODIFIER_LOCKED, DEFAULT_MODIFIERS[CONF_MODIFIER_LOCKED])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_WINDOWS,
                         default=str(options.get(CONF_MAPPING_WINDOWS, DEFAULT_MAPPINGS[CONF_MAPPING_WINDOWS])),
@@ -321,7 +320,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_WINDOWS,
                         default=str(options.get(CONF_MODIFIER_WINDOWS, DEFAULT_MODIFIERS[CONF_MODIFIER_WINDOWS])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_HANDBRAKE,
                         default=str(options.get(CONF_MAPPING_HANDBRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_HANDBRAKE])),
@@ -330,7 +328,6 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                         CONF_MODIFIER_HANDBRAKE,
                         default=str(options.get(CONF_MODIFIER_HANDBRAKE, DEFAULT_MODIFIERS[CONF_MODIFIER_HANDBRAKE])),
                     ): selector.TextSelector(),
-                    
                     vol.Optional(
                         CONF_MAPPING_LIGHTS,
                         default=str(options.get(CONF_MAPPING_LIGHTS, DEFAULT_MAPPINGS[CONF_MAPPING_LIGHTS])),
@@ -338,6 +335,158 @@ class Fmc130TraccarOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(
                         CONF_MODIFIER_LIGHTS,
                         default=str(options.get(CONF_MODIFIER_LIGHTS, DEFAULT_MODIFIERS[CONF_MODIFIER_LIGHTS])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_VOLTAGE,
+                        default=str(options.get(CONF_MAPPING_VOLTAGE, DEFAULT_MAPPINGS[CONF_MAPPING_VOLTAGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_VOLTAGE,
+                        default=str(options.get(CONF_MODIFIER_VOLTAGE, DEFAULT_MODIFIERS[CONF_MODIFIER_VOLTAGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_SPEED,
+                        default=str(options.get(CONF_MAPPING_SPEED, DEFAULT_MAPPINGS[CONF_MAPPING_SPEED])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_SPEED,
+                        default=str(options.get(CONF_MODIFIER_SPEED, DEFAULT_MODIFIERS[CONF_MODIFIER_SPEED])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_MILEAGE,
+                        default=str(options.get(CONF_MAPPING_MILEAGE, DEFAULT_MAPPINGS[CONF_MAPPING_MILEAGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_MILEAGE,
+                        default=str(options.get(CONF_MODIFIER_MILEAGE, DEFAULT_MODIFIERS[CONF_MODIFIER_MILEAGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_ENGINE_TEMP,
+                        default=str(options.get(CONF_MAPPING_ENGINE_TEMP, DEFAULT_MAPPINGS[CONF_MAPPING_ENGINE_TEMP])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_ENGINE_TEMP,
+                        default=str(options.get(CONF_MODIFIER_ENGINE_TEMP, DEFAULT_MODIFIERS[CONF_MODIFIER_ENGINE_TEMP])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_SLEEP_MODE,
+                        default=str(options.get(CONF_MAPPING_SLEEP_MODE, DEFAULT_MAPPINGS[CONF_MAPPING_SLEEP_MODE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_SLEEP_MODE,
+                        default=str(options.get(CONF_MODIFIER_SLEEP_MODE, DEFAULT_MODIFIERS[CONF_MODIFIER_SLEEP_MODE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_IGNITION,
+                        default=str(options.get(CONF_MAPPING_IGNITION, DEFAULT_MAPPINGS[CONF_MAPPING_IGNITION])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_IGNITION,
+                        default=str(options.get(CONF_MODIFIER_IGNITION, DEFAULT_MODIFIERS[CONF_MODIFIER_IGNITION])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_MOTION,
+                        default=str(options.get(CONF_MAPPING_MOTION, DEFAULT_MAPPINGS[CONF_MAPPING_MOTION])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_MOTION,
+                        default=str(options.get(CONF_MODIFIER_MOTION, DEFAULT_MODIFIERS[CONF_MODIFIER_MOTION])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_TRUNK,
+                        default=str(options.get(CONF_MAPPING_TRUNK, DEFAULT_MAPPINGS[CONF_MAPPING_TRUNK])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_TRUNK,
+                        default=str(options.get(CONF_MODIFIER_TRUNK, DEFAULT_MODIFIERS[CONF_MODIFIER_TRUNK])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_VEHICLE_RANGE,
+                        default=str(options.get(CONF_MAPPING_VEHICLE_RANGE, DEFAULT_MAPPINGS[CONF_MAPPING_VEHICLE_RANGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_VEHICLE_RANGE,
+                        default=str(options.get(CONF_MODIFIER_VEHICLE_RANGE, DEFAULT_MODIFIERS[CONF_MODIFIER_VEHICLE_RANGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_ENGINE_COVER,
+                        default=str(options.get(CONF_MAPPING_ENGINE_COVER, DEFAULT_MAPPINGS[CONF_MAPPING_ENGINE_COVER])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_ENGINE_COVER,
+                        default=str(options.get(CONF_MODIFIER_ENGINE_COVER, DEFAULT_MODIFIERS[CONF_MODIFIER_ENGINE_COVER])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_CHECK_ENGINE,
+                        default=str(options.get(CONF_MAPPING_CHECK_ENGINE, DEFAULT_MAPPINGS[CONF_MAPPING_CHECK_ENGINE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_CHECK_ENGINE,
+                        default=str(options.get(CONF_MODIFIER_CHECK_ENGINE, DEFAULT_MODIFIERS[CONF_MODIFIER_CHECK_ENGINE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_COOLANT_LEVEL,
+                        default=str(options.get(CONF_MAPPING_COOLANT_LEVEL, DEFAULT_MAPPINGS[CONF_MAPPING_COOLANT_LEVEL])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_COOLANT_LEVEL,
+                        default=str(options.get(CONF_MODIFIER_COOLANT_LEVEL, DEFAULT_MODIFIERS[CONF_MODIFIER_COOLANT_LEVEL])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_BATTERY_CHARGE,
+                        default=str(options.get(CONF_MAPPING_BATTERY_CHARGE, DEFAULT_MAPPINGS[CONF_MAPPING_BATTERY_CHARGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_BATTERY_CHARGE,
+                        default=str(options.get(CONF_MODIFIER_BATTERY_CHARGE, DEFAULT_MODIFIERS[CONF_MODIFIER_BATTERY_CHARGE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_WARNING,
+                        default=str(options.get(CONF_MAPPING_WARNING, DEFAULT_MAPPINGS[CONF_MAPPING_WARNING])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_WARNING,
+                        default=str(options.get(CONF_MODIFIER_WARNING, DEFAULT_MODIFIERS[CONF_MODIFIER_WARNING])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_LOW_TIRE,
+                        default=str(options.get(CONF_MAPPING_LOW_TIRE, DEFAULT_MAPPINGS[CONF_MAPPING_LOW_TIRE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_LOW_TIRE,
+                        default=str(options.get(CONF_MODIFIER_LOW_TIRE, DEFAULT_MODIFIERS[CONF_MODIFIER_LOW_TIRE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_WEAR_BRAKE,
+                        default=str(options.get(CONF_MAPPING_WEAR_BRAKE, DEFAULT_MAPPINGS[CONF_MAPPING_WEAR_BRAKE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_WEAR_BRAKE,
+                        default=str(options.get(CONF_MODIFIER_WEAR_BRAKE, DEFAULT_MODIFIERS[CONF_MODIFIER_WEAR_BRAKE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_LOW_FUEL,
+                        default=str(options.get(CONF_MAPPING_LOW_FUEL, DEFAULT_MAPPINGS[CONF_MAPPING_LOW_FUEL])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_LOW_FUEL,
+                        default=str(options.get(CONF_MODIFIER_LOW_FUEL, DEFAULT_MODIFIERS[CONF_MODIFIER_LOW_FUEL])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_MAINTENANCE,
+                        default=str(options.get(CONF_MAPPING_MAINTENANCE, DEFAULT_MAPPINGS[CONF_MAPPING_MAINTENANCE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_MAINTENANCE,
+                        default=str(options.get(CONF_MODIFIER_MAINTENANCE, DEFAULT_MODIFIERS[CONF_MODIFIER_MAINTENANCE])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MAPPING_LOW_COOLANT,
+                        default=str(options.get(CONF_MAPPING_LOW_COOLANT, DEFAULT_MAPPINGS[CONF_MAPPING_LOW_COOLANT])),
+                    ): selector.TextSelector(),
+                    vol.Optional(
+                        CONF_MODIFIER_LOW_COOLANT,
+                        default=str(options.get(CONF_MODIFIER_LOW_COOLANT, DEFAULT_MODIFIERS[CONF_MODIFIER_LOW_COOLANT])),
                     ): selector.TextSelector(),
                 }
             ),

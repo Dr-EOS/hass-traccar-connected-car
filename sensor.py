@@ -20,10 +20,20 @@ from .const import (
     CONF_MODIFIER_RPM,
     CONF_MAPPING_FUEL,
     CONF_MODIFIER_FUEL,
-    CONF_MAPPING_OIL,
-    CONF_MODIFIER_OIL,
     CONF_MAPPING_DTC,
     CONF_MODIFIER_DTC,
+    CONF_MAPPING_VOLTAGE,
+    CONF_MODIFIER_VOLTAGE,
+    CONF_MAPPING_SPEED,
+    CONF_MODIFIER_SPEED,
+    CONF_MAPPING_MILEAGE,
+    CONF_MODIFIER_MILEAGE,
+    CONF_MAPPING_ENGINE_TEMP,
+    CONF_MODIFIER_ENGINE_TEMP,
+    CONF_MAPPING_SLEEP_MODE,
+    CONF_MODIFIER_SLEEP_MODE,
+    CONF_MAPPING_VEHICLE_RANGE,
+    CONF_MODIFIER_VEHICLE_RANGE,
     DEFAULT_MAPPINGS,
     DEFAULT_MODIFIERS,
 )
@@ -35,42 +45,6 @@ class Fmc130SensorDescription(SensorEntityDescription):
     modifier: str | None = None
 
 SENSORS: list[Fmc130SensorDescription] = [
-    Fmc130SensorDescription(
-        key="totalDistance",
-        name="Total Distance",
-        native_unit_of_measurement=UnitOfLength.KILOMETERS,
-        modifier="*0.001",
-    ),
-    Fmc130SensorDescription(
-        key=81,
-        name="Vehicle Speed",
-        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
-    ),
-    Fmc130SensorDescription(
-        key=115,
-        name="Engine Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        modifier="*0.1",
-    ),
-    Fmc130SensorDescription(
-        key=200,
-        name="Sleep Mode",
-    ),
-    Fmc130SensorDescription(
-        key=866,
-        name="Vehicle Range",
-        native_unit_of_measurement=UnitOfLength.KILOMETERS,
-    ),
-    Fmc130SensorDescription(
-        key="power",
-        name="Power",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-    ),
-    Fmc130SensorDescription(
-        key="speed",
-        name="Speed",
-        native_unit_of_measurement=UnitOfSpeed.KILOMETERS_PER_HOUR,
-    ),
     Fmc130SensorDescription(
         key="sat",
         name="Satellites",
@@ -96,12 +70,18 @@ async def async_setup_entry(hass, entry, async_add_entities):
     dynamic_sensors = list(SENSORS)
     
     mappings = [
-        (CONF_MAPPING_RPM, CONF_MODIFIER_RPM, "RPM", "rpm"),
-        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL, "Fuel Level", "l"),
-        (CONF_MAPPING_DTC, CONF_MODIFIER_DTC, "DTC Codes", None),
+        (CONF_MAPPING_RPM, CONF_MODIFIER_RPM, "RPM", "rpm", None),
+        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL, "Fuel Level", "l", None),
+        (CONF_MAPPING_DTC, CONF_MODIFIER_DTC, "DTC Codes", None, None),
+        (CONF_MAPPING_VOLTAGE, CONF_MODIFIER_VOLTAGE, "External Voltage", UnitOfElectricPotential.VOLT, None),
+        (CONF_MAPPING_SPEED, CONF_MODIFIER_SPEED, "Vehicle Speed", UnitOfSpeed.KILOMETERS_PER_HOUR, None),
+        (CONF_MAPPING_MILEAGE, CONF_MODIFIER_MILEAGE, "Total Mileage", UnitOfLength.KILOMETERS, None),
+        (CONF_MAPPING_ENGINE_TEMP, CONF_MODIFIER_ENGINE_TEMP, "Engine Temperature", UnitOfTemperature.CELSIUS, None),
+        (CONF_MAPPING_SLEEP_MODE, CONF_MODIFIER_SLEEP_MODE, "Sleep Mode", None, None),
+        (CONF_MAPPING_VEHICLE_RANGE, CONF_MODIFIER_VEHICLE_RANGE, "Vehicle Range", UnitOfLength.KILOMETERS, None),
     ]
     
-    for map_key, mod_key, name, unit in mappings:
+    for map_key, mod_key, name, unit, dev_class in mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
         modifier = options.get(mod_key, DEFAULT_MODIFIERS[mod_key])
         
@@ -110,6 +90,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 key=io_id,
                 name=name,
                 native_unit_of_measurement=unit,
+                device_class=dev_class,
                 modifier=modifier
             ))
 

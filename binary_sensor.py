@@ -35,83 +35,7 @@ class Fmc130BinarySensorDescription(BinarySensorEntityDescription):
     """Class describing FMC130 binary sensor entities."""
     modifier: str | None = None
 
-BINARY_SENSORS: list[Fmc130BinarySensorDescription] = [
-    Fmc130BinarySensorDescription(
-        key="motion", 
-        name="Motion", 
-        device_class=BinarySensorDeviceClass.MOTION
-    ),
-    Fmc130BinarySensorDescription(
-        key="ignition", 
-        name="Ignition", 
-        device_class=BinarySensorDeviceClass.POWER
-    ),
-    Fmc130BinarySensorDescription(
-        key=658,
-        name="Trunk Door Open",
-        device_class=BinarySensorDeviceClass.DOOR
-    ),
-    Fmc130BinarySensorDescription(
-        key=913,
-        name="Engine Cover Open",
-        device_class=BinarySensorDeviceClass.DOOR
-    ),
-    Fmc130BinarySensorDescription(
-        key=953,
-        name="Check Engine Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=958,
-        name="Oil Level Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=959,
-        name="Coolant liquid level Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=960,
-        name="Battery Not Charging Indicator",
-        device_class=BinarySensorDeviceClass.BATTERY
-    ),
-    Fmc130BinarySensorDescription(
-        key=964,
-        name="Warning Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=965,
-        name="Lights Failure Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=966,
-        name="Low Tire Pressure Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=967,
-        name="Wear Of Brake Pads Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=968,
-        name="Low Fuel Level Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=969,
-        name="Maintenence required Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-    Fmc130BinarySensorDescription(
-        key=976,
-        name="Low Coolant Level Indicator",
-        device_class=BinarySensorDeviceClass.PROBLEM
-    ),
-]
+BINARY_SENSORS: list[Fmc130BinarySensorDescription] = []
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up binary sensor platform."""
@@ -152,6 +76,19 @@ async def async_setup_entry(hass, entry, async_add_entities):
         (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE, "Handbrake", None),
         (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
         (CONF_MAPPING_OIL, CONF_MODIFIER_OIL, "Oil Level Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_TRUNK, CONF_MODIFIER_TRUNK, "Trunk Door Open", BinarySensorDeviceClass.DOOR),
+        (CONF_MAPPING_ENGINE_COVER, CONF_MODIFIER_ENGINE_COVER, "Engine Cover Open", BinarySensorDeviceClass.DOOR),
+        (CONF_MAPPING_CHECK_ENGINE, CONF_MODIFIER_CHECK_ENGINE, "Check Engine Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_COOLANT_LEVEL, CONF_MODIFIER_COOLANT_LEVEL, "Coolant liquid level Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_BATTERY_CHARGE, CONF_MODIFIER_BATTERY_CHARGE, "Battery Not Charging Indicator", BinarySensorDeviceClass.BATTERY),
+        (CONF_MAPPING_WARNING, CONF_MODIFIER_WARNING, "Warning Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_LOW_TIRE, CONF_MODIFIER_LOW_TIRE, "Low Tire Pressure Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_WEAR_BRAKE, CONF_MODIFIER_WEAR_BRAKE, "Wear Of Brake Pads Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_LOW_FUEL, CONF_MODIFIER_LOW_FUEL, "Low Fuel Level Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_MAINTENANCE, CONF_MODIFIER_MAINTENANCE, "Maintenence required Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_LOW_COOLANT, CONF_MODIFIER_LOW_COOLANT, "Low Coolant Level Indicator", BinarySensorDeviceClass.PROBLEM),
+        (CONF_MAPPING_IGNITION, CONF_MODIFIER_IGNITION, "Ignition", BinarySensorDeviceClass.POWER),
+        (CONF_MAPPING_MOTION, CONF_MODIFIER_MOTION, "Motion", BinarySensorDeviceClass.MOTION),
     ]
     
     for map_key, mod_key, name, dev_class in other_mappings:
