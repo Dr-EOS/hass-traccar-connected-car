@@ -55,29 +55,28 @@ async def async_setup_entry(hass, entry, async_add_entities):
         (CONF_MAPPING_DOOR_FR, CONF_MODIFIER_DOOR_FR, "Door Front Right"),
         (CONF_MAPPING_DOOR_RL, CONF_MODIFIER_DOOR_RL, "Door Rear Left"),
         (CONF_MAPPING_DOOR_RR, CONF_MODIFIER_DOOR_RR, "Door Rear Right"),
+        (CONF_MAPPING_TRUNK, CONF_MODIFIER_TRUNK, "Trunk Door Open"),
+        (CONF_MAPPING_ENGINE_COVER, CONF_MODIFIER_ENGINE_COVER, "Engine Cover Open"),
     ]
     
+    door_descs = []
     for map_key, mod_key, name in door_mappings:
         io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
         modifier = options.get(mod_key, DEFAULT_MODIFIERS[mod_key])
         
         if io_id is not None:
-            dynamic_sensors.append(Fmc130BinarySensorDescription(
+            desc = Fmc130BinarySensorDescription(
                 key=io_id,
                 modifier=modifier,
                 name=name,
                 device_class=BinarySensorDeviceClass.DOOR
-            ))
-    
-    # Other bitmask/numeric sensors
-    other_mappings = [
-        (CONF_MAPPING_LOCKED, CONF_MODIFIER_LOCKED, "Locked", BinarySensorDeviceClass.LOCK),
-        (CONF_MAPPING_WINDOWS, CONF_MODIFIER_WINDOWS, "Windows", BinarySensorDeviceClass.WINDOW),
-        (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE, "Handbrake", None),
-        (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
+            )
+            dynamic_sensors.append(desc)
+            door_descs.append(desc)
+
+    # Warnings
+    warning_mappings = [
         (CONF_MAPPING_OIL, CONF_MODIFIER_OIL, "Oil Level Indicator", BinarySensorDeviceClass.PROBLEM),
-        (CONF_MAPPING_TRUNK, CONF_MODIFIER_TRUNK, "Trunk Door Open", BinarySensorDeviceClass.DOOR),
-        (CONF_MAPPING_ENGINE_COVER, CONF_MODIFIER_ENGINE_COVER, "Engine Cover Open", BinarySensorDeviceClass.DOOR),
         (CONF_MAPPING_CHECK_ENGINE, CONF_MODIFIER_CHECK_ENGINE, "Check Engine Indicator", BinarySensorDeviceClass.PROBLEM),
         (CONF_MAPPING_COOLANT_LEVEL, CONF_MODIFIER_COOLANT_LEVEL, "Coolant liquid level Indicator", BinarySensorDeviceClass.PROBLEM),
         (CONF_MAPPING_BATTERY_CHARGE, CONF_MODIFIER_BATTERY_CHARGE, "Battery Not Charging Indicator", BinarySensorDeviceClass.BATTERY),
@@ -87,6 +86,29 @@ async def async_setup_entry(hass, entry, async_add_entities):
         (CONF_MAPPING_LOW_FUEL, CONF_MODIFIER_LOW_FUEL, "Low Fuel Level Indicator", BinarySensorDeviceClass.PROBLEM),
         (CONF_MAPPING_MAINTENANCE, CONF_MODIFIER_MAINTENANCE, "Maintenence required Indicator", BinarySensorDeviceClass.PROBLEM),
         (CONF_MAPPING_LOW_COOLANT, CONF_MODIFIER_LOW_COOLANT, "Low Coolant Level Indicator", BinarySensorDeviceClass.PROBLEM),
+    ]
+
+    warning_descs = []
+    for map_key, mod_key, name, dev_class in warning_mappings:
+        io_id = parse_int_value(options.get(map_key, DEFAULT_MAPPINGS[map_key]))
+        modifier = options.get(mod_key, DEFAULT_MODIFIERS[mod_key])
+        
+        if io_id is not None:
+            desc = Fmc130BinarySensorDescription(
+                key=io_id,
+                modifier=modifier,
+                name=name,
+                device_class=dev_class
+            )
+            dynamic_sensors.append(desc)
+            warning_descs.append(desc)
+    
+    # Other bitmask/numeric sensors
+    other_mappings = [
+        (CONF_MAPPING_LOCKED, CONF_MODIFIER_LOCKED, "Locked", BinarySensorDeviceClass.LOCK),
+        (CONF_MAPPING_WINDOWS, CONF_MODIFIER_WINDOWS, "Windows", BinarySensorDeviceClass.WINDOW),
+        (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE, "Handbrake", None),
+        (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS, "Lights", BinarySensorDeviceClass.LIGHT),
         (CONF_MAPPING_IGNITION, CONF_MODIFIER_IGNITION, "Ignition", BinarySensorDeviceClass.POWER),
         (CONF_MAPPING_MOTION, CONF_MODIFIER_MOTION, "Motion", BinarySensorDeviceClass.MOTION),
     ]
@@ -111,8 +133,91 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         for desc in dynamic_sensors:
             entities.append(Fmc130BinarySensor(coordinator, dev, desc))
+            
+        # Add Aggregated Sensors
+        if door_descs:
+            entities.append(Fmc130AggregatedBinarySensor(coordinator, dev, "All doors closed", door_descs, invert_logic=True, icon="mdi:car-door-lock"))
+        if warning_descs:
+            entities.append(Fmc130AggregatedBinarySensor(coordinator, dev, "No warnings", warning_descs, invert_logic=True, icon="mdi:check-circle"))
 
     async_add_entities(entities)
+
+class Fmc130AggregatedBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Aggregated binary sensor (e.g. All doors closed, No warnings)."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, coordinator, device, name, descriptions, invert_logic=True, icon=None):
+        super().__init__(coordinator)
+        self._device = device
+        self._attr_name = name
+        self._descriptions = descriptions
+        self._invert_logic = invert_logic
+        if icon:
+            self._attr_icon = icon
+        
+        self._attr_unique_id = f"{DOMAIN}_{device['id']}_{name.lower().replace(' ', '_')}"
+
+    @property
+    def device_info(self):
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._device["id"])},
+            name=self._device["name"],
+            manufacturer="Teltonika",
+            model=self._device.get("model", "FMC130"),
+        )
+
+    @property
+    def available(self) -> bool:
+        """Return True if entity is available."""
+        if not self.coordinator.data:
+            return False
+        return self._device["id"] in self.coordinator.data.get("positions", {})
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return aggregated state."""
+        if not self.coordinator.data:
+            return None
+
+        pos = self.coordinator.data["positions"].get(self._device["id"])
+        if not pos:
+            return None
+
+        any_true = False
+        all_none = True
+
+        for desc in self._descriptions:
+            attrs = pos.get("attributes", {})
+            raw = attrs.get(desc.key)
+            if raw is None:
+                raw = pos.get(desc.key)
+
+            if raw is not None:
+                all_none = False
+                val = apply_modifier(raw, desc.modifier)
+                state = bool(val)
+
+                # Special handling for lock inversions if any lock is in the list
+                if desc.device_class == BinarySensorDeviceClass.LOCK:
+                    if desc.modifier and desc.modifier.startswith("&"):
+                        mask = parse_int_value(desc.modifier[1:])
+                        if mask is not None:
+                            state = not ((int(raw) & mask) == mask)
+                    else:
+                        state = not bool(val)
+
+                if state:
+                    any_true = True
+                    break
+
+        if all_none:
+            return None
+
+        if self._invert_logic:
+            return not any_true
+        else:
+            return any_true
 
 class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
     """FMC130 binary sensor entity."""
