@@ -11,6 +11,7 @@ def send_payloads(host, port, imei, payloads, interval=1.0, loop=False, use_ssl=
     try:
         while True:
             raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            raw_sock.settimeout(5.0) # Prevent indefinite hang during SSL handshake or connection
             if use_ssl:
                 context = ssl.create_default_context()
                 context.check_hostname = False
@@ -69,6 +70,8 @@ def send_payloads(host, port, imei, payloads, interval=1.0, loop=False, use_ssl=
         print(f"Error: Could not connect to {host}:{port}. Is the integration listener running?")
     except KeyboardInterrupt:
         print("\nStopped by user.")
+    except TimeoutError:
+        print(f"Error: Connection timed out. If you used --ssl, ensure port {port} is actually configured for TLS in Home Assistant.")
     except Exception as e:
         print(f"Error: {e}")
 
