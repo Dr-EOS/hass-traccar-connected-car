@@ -208,6 +208,29 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
         if raw is None:
             raw = pos.get(str(self.entity_description.key))
 
+        fallback_map = {
+            66: "power",
+            "66": "power",
+            67: "battery",
+            "67": "battery",
+            81: "speed",
+            "81": "speed",
+            87: "totalDistance",
+            "87": "totalDistance",
+            113: "batteryLevel",
+            "113": "batteryLevel",
+        }
+
+        is_fallback = False
+        if raw is None:
+            fallback_name = fallback_map.get(self.entity_description.key)
+            if fallback_name:
+                raw = pos.get(fallback_name)
+                if raw is None:
+                    raw = attrs.get(fallback_name)
+                if raw is not None:
+                    is_fallback = True
+
         if raw is None:
             return None
 
@@ -217,6 +240,9 @@ class Fmc130Sensor(CoordinatorEntity, SensorEntity):
             except (ValueError, TypeError):
                 return None
 
-        val = apply_modifier(raw, self.entity_description.modifier)
+        if is_fallback and self.entity_description.key in [66, "66", 67, "67"]:
+            val = raw
+        else:
+            val = apply_modifier(raw, self.entity_description.modifier)
         
         return val

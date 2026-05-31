@@ -13,18 +13,46 @@ from .const import (
     CONF_MAPPING_DOOR_FR,
     CONF_MAPPING_DOOR_RL,
     CONF_MAPPING_DOOR_RR,
+    CONF_MAPPING_TRUNK,
+    CONF_MAPPING_ENGINE_COVER,
+    CONF_MAPPING_OIL,
+    CONF_MAPPING_CHECK_ENGINE,
+    CONF_MAPPING_COOLANT_LEVEL,
+    CONF_MAPPING_BATTERY_CHARGE,
+    CONF_MAPPING_WARNING,
+    CONF_MAPPING_LOW_TIRE,
+    CONF_MAPPING_WEAR_BRAKE,
+    CONF_MAPPING_LOW_FUEL,
+    CONF_MAPPING_MAINTENANCE,
+    CONF_MAPPING_LOW_COOLANT,
     CONF_MAPPING_LOCKED,
     CONF_MAPPING_WINDOWS,
     CONF_MAPPING_HANDBRAKE,
     CONF_MAPPING_LIGHTS,
+    CONF_MAPPING_IGNITION,
+    CONF_MAPPING_MOTION,
     CONF_MODIFIER_DOOR_FL,
     CONF_MODIFIER_DOOR_FR,
     CONF_MODIFIER_DOOR_RL,
     CONF_MODIFIER_DOOR_RR,
+    CONF_MODIFIER_TRUNK,
+    CONF_MODIFIER_ENGINE_COVER,
+    CONF_MODIFIER_OIL,
+    CONF_MODIFIER_CHECK_ENGINE,
+    CONF_MODIFIER_COOLANT_LEVEL,
+    CONF_MODIFIER_BATTERY_CHARGE,
+    CONF_MODIFIER_WARNING,
+    CONF_MODIFIER_LOW_TIRE,
+    CONF_MODIFIER_WEAR_BRAKE,
+    CONF_MODIFIER_LOW_FUEL,
+    CONF_MODIFIER_MAINTENANCE,
+    CONF_MODIFIER_LOW_COOLANT,
     CONF_MODIFIER_LOCKED,
     CONF_MODIFIER_WINDOWS,
     CONF_MODIFIER_HANDBRAKE,
     CONF_MODIFIER_LIGHTS,
+    CONF_MODIFIER_IGNITION,
+    CONF_MODIFIER_MOTION,
     DEFAULT_MAPPINGS,
     DEFAULT_MODIFIERS,
 )
@@ -280,6 +308,20 @@ class Fmc130BinarySensor(CoordinatorEntity, BinarySensorEntity):
             
         if raw is None:
             raw = pos.get(str(self.entity_description.key))
+
+        fallback_map = {
+            239: "ignition",
+            "239": "ignition",
+            240: "motion",
+            "240": "motion",
+        }
+        
+        if raw is None:
+            fallback_name = fallback_map.get(self.entity_description.key)
+            if fallback_name:
+                raw = pos.get(fallback_name)
+                if raw is None:
+                    raw = attrs.get(fallback_name)
 
         if raw is None:
             return None

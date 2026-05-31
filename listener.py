@@ -217,7 +217,16 @@ class TeltonikaProtocol(asyncio.Protocol):
                         val_len = struct.unpack(">H", data[offset:offset+2])[0]
                         offset += 2
                         if len(data) < offset + val_len: break
-                        # We currently don't map variable length data, just skip it
+                        
+                        val_bytes = data[offset : offset + val_len]
+                        try:
+                            # Try to decode as string (e.g. DTC codes)
+                            val = val_bytes.decode("utf-8").strip()
+                        except UnicodeDecodeError:
+                            # Fallback to hex representation
+                            val = val_bytes.hex()
+                            
+                        self._map_io(last_extracted_data, io_id, val)
                         offset += val_len
 
 
@@ -248,7 +257,7 @@ class TeltonikaProtocol(asyncio.Protocol):
             pass
         return None
 
-    def _map_io(self, data: dict, io_id: int, val: int) -> None:
+    def _map_io(self, data: dict, io_id: int, val: Any) -> None:
         """Map IO ID to named attribute or generic key."""
         # Always store the raw IO ID
         data[io_id] = val

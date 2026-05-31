@@ -11,6 +11,13 @@ from custom_components.fmc130_traccar.const import DOMAIN
 async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     """Test sensor states and push updates."""
     mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            "map_locked": "321",
+            "mod_locked": "&30",
+        }
+    )
     
     # Patch the server start to avoid real socket
     with patch("custom_components.fmc130_traccar.listener.TeltonikaServer.async_start"):
@@ -21,7 +28,7 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     # but we did fetch initial data in __init__ (mocked via DataUpdateCoordinator method)
     # Actually in our new __init__, positions start empty.
     
-    state = hass.states.get("sensor.test_vehicle_power")
+    state = hass.states.get("sensor.test_vehicle_external_voltage")
     assert state is not None
     assert state.state == "unknown"
 
@@ -47,10 +54,10 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     await hass.async_block_till_done()
 
     # Check if state updated immediately
-    state = hass.states.get("sensor.test_vehicle_power")
+    state = hass.states.get("sensor.test_vehicle_external_voltage")
     assert state.state == "13.8"
     
-    state = hass.states.get("sensor.test_vehicle_speed")
+    state = hass.states.get("sensor.test_vehicle_vehicle_speed")
     assert state.state == "85"
     
     state = hass.states.get("sensor.test_vehicle_satellites")
@@ -99,5 +106,5 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     # Test scaling modifier (*0.001 for totalDistance)
     callback("123456789012345", {"totalDistance": 1234567}) # 1234567 meters -> 1234.567 km
     await hass.async_block_till_done()
-    odo_state = hass.states.get("sensor.test_vehicle_total_distance")
+    odo_state = hass.states.get("sensor.test_vehicle_total_mileage")
     assert odo_state.state == "1234.567"
