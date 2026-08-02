@@ -105,32 +105,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
 
     await coordinator.async_config_entry_first_refresh()
 
-    # Prepare IO tracking info
+    # Prepare IO tracking info and registered mapped IO IDs
     io_modifiers = {}
-    for map_key, mod_key in [
-        (CONF_MAPPING_RPM, CONF_MODIFIER_RPM),
-        (CONF_MAPPING_FUEL, CONF_MODIFIER_FUEL),
-        (CONF_MAPPING_OIL, CONF_MODIFIER_OIL),
-        (CONF_MAPPING_DTC, CONF_MODIFIER_DTC),
-        (CONF_MAPPING_DOOR_FL, CONF_MODIFIER_DOOR_FL),
-        (CONF_MAPPING_DOOR_FR, CONF_MODIFIER_DOOR_FR),
-        (CONF_MAPPING_DOOR_RL, CONF_MODIFIER_DOOR_RL),
-        (CONF_MAPPING_DOOR_RR, CONF_MODIFIER_DOOR_RR),
-        (CONF_MAPPING_LOCKED, CONF_MODIFIER_LOCKED),
-        (CONF_MAPPING_WINDOWS, CONF_MODIFIER_WINDOWS),
-        (CONF_MAPPING_HANDBRAKE, CONF_MODIFIER_HANDBRAKE),
-        (CONF_MAPPING_LIGHTS, CONF_MODIFIER_LIGHTS),
-    ]:
+    mapped_ids = set()
+    for map_key in DEFAULT_MAPPINGS:
+        mod_key = map_key.replace("map_", "mod_")
         map_val = entry.options.get(map_key, DEFAULT_MAPPINGS.get(map_key))
         io_id = parse_int_value(map_val)
         if io_id is not None:
+            mapped_ids.add(io_id)
             modifier = entry.options.get(mod_key, DEFAULT_MODIFIERS.get(mod_key))
             io_modifiers.setdefault(io_id, []).append(modifier)
-    
-    # Standard modifiers
+
+    # Standard modifiers and built-in IOs
     io_modifiers.setdefault(87, ["*0.001"]) # Total Mileage
     io_modifiers.setdefault(66, ["*0.001"]) # External Voltage
     io_modifiers.setdefault(67, ["*0.001"]) # Battery Voltage
+    mapped_ids.update({1, 24, 66, 67, 81, 87, 113, 239, 240})
 
     @callback
     def handle_direct_telemetry(imei, data):
@@ -201,19 +192,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     # Set debug mode for this device
     imei = entry.data[CONF_IMEI]
     server.set_debug(imei, entry.data.get(CONF_DEBUG_MODE, False))
-    
-    # Register mapped IO IDs for unknown IO tracking
-    mapping_keys = [
-        CONF_MAPPING_RPM, CONF_MAPPING_FUEL, CONF_MAPPING_OIL, CONF_MAPPING_DTC,
-        CONF_MAPPING_DOOR_FL, CONF_MAPPING_DOOR_FR, CONF_MAPPING_DOOR_RL, CONF_MAPPING_DOOR_RR,
-        CONF_MAPPING_LOCKED, CONF_MAPPING_WINDOWS, CONF_MAPPING_HANDBRAKE, CONF_MAPPING_LIGHTS
-    ]
-    mapped_ids = set()
-    for key in mapping_keys:
-        val = entry.options.get(key, DEFAULT_MAPPINGS.get(key))
-        io_id = parse_int_value(val)
-        if io_id is not None:
-            mapped_ids.add(io_id)
     server.set_mappings(imei, mapped_ids)
     
     # Register this device's callback

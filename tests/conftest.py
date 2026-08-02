@@ -1,5 +1,11 @@
-"""Fixtures for fmc130_traccar tests."""
 from __future__ import annotations
+
+import warnings
+warnings.filterwarnings("ignore")
+
+"""Fixtures for fmc130_traccar tests."""
+
+
 
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
@@ -10,6 +16,11 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 pytest_plugins = ["pytest_homeassistant_custom_component"]
 
+def pytest_configure(config):
+    config.addinivalue_line("filterwarnings", "ignore::pytest.PytestRemovedIn9Warning")
+    config.addinivalue_line("filterwarnings", "ignore::DeprecationWarning")
+
+
 
 from custom_components.fmc130_traccar.const import (
     DOMAIN,
@@ -19,6 +30,17 @@ from custom_components.fmc130_traccar.const import (
     CONF_TLS_MODE,
     TLS_MODE_NONE,
 )
+
+
+
+
+
+
+
+
+
+
+
 
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):

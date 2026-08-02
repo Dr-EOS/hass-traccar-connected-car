@@ -36,42 +36,59 @@ class TeltonikaProtocol(asyncio.Protocol):
     def connection_made(self, transport: asyncio.Transport) -> None:
         self.transport = transport
         self._peername = transport.get_extra_info("peername")
-        _LOGGER.debug("Connection from %s", self._peername)
+        _LOGGER.info("Connection from %s", self._peername)
+        self.server._log_event(f"New connection from {self._peername}")
 
     def data_received(self, data: bytes) -> None:
-        _LOGGER.debug("Incoming data from %s: %s", self._peername, data.hex())
+        _LOGGER.info("Incoming message from %s (%d bytes): %s", self._peername, len(data), data.hex())
+        self.server._log_event(f"Incoming message from {self._peername} ({len(data)} bytes): {data.hex()}")
         self.buffer.extend(data)
         
         if self.imei is None:
-            # Standard Teltonika: 2 bytes length + IMEI
-            if len(self.buffer) < 2:
-                return
-            
-            imei_len = struct.unpack(">H", self.buffer[:2])[0]
-            
-            # Security: Sanity check IMEI length to prevent buffer overflow attacks
-            if imei_len == 0 or imei_len > 100:
-                _LOGGER.warning("Invalid IMEI length (%d) from %s. Closing connection.", imei_len, self._peername)
-                self.transport.close()
-                return
-                
-            if len(self.buffer) < 2 + imei_len:
-                return
-            
-            try:
-                self.imei = self.buffer[2:2+imei_len].decode("ascii")
-            except UnicodeDecodeError:
-                _LOGGER.error("Invalid IMEI encoding received from %s", self._peername)
-                self.transport.close()
-                return
+            # Check for direct data packet preamble (0x00000000) sent without IMEI handshake
+            if len(self.buffer) >= 4 and self.buffer[:4] == b"\x00\x00\x00\x00":
+                if len(self.server._data_callbacks) == 1:
+                    registered_imei = next(iter(self.server._data_callbacks.keys()))
+                    self.imei = registered_imei
+                    _LOGGER.info("Direct data packet received from %s without IMEI handshake; using registered IMEI: %s", self._peername, self.imei)
+                    self.server._connections[self.imei] = self
+                    self.server._log_event(f"Associated connection from {self._peername} with registered IMEI: {self.imei}")
+                else:
+                    _LOGGER.warning("Direct packet preamble received from %s without IMEI handshake, but %d IMEIs registered", self._peername, len(self.server._data_callbacks))
 
-            self.buffer = self.buffer[2+imei_len:]
-            
-            _LOGGER.info("Device connected with IMEI: %s", self.imei)
-            self.server._connections[self.imei] = self
-            self.server._log_event(f"Device connected: {self.imei}")
-            # ACK IMEI with 0x01
-            self.transport.write(b"\x01")
+            # Standard Teltonika: 2 bytes length + IMEI
+            if self.imei is None:
+                if len(self.buffer) < 2:
+                    return
+                
+                imei_len = struct.unpack(">H", self.buffer[:2])[0]
+                
+                # Security: Sanity check IMEI length to prevent buffer overflow attacks
+                if imei_len == 0 or imei_len > 100:
+                    _LOGGER.warning("Invalid IMEI length (%d) from %s. Closing connection.", imei_len, self._peername)
+                    self.server._log_event(f"Invalid IMEI length ({imei_len}) from {self._peername}")
+                    self.transport.close()
+                    return
+                    
+                if len(self.buffer) < 2 + imei_len:
+                    return
+                
+                try:
+                    raw_imei = self.buffer[2:2+imei_len].decode("ascii", errors="ignore")
+                    self.imei = raw_imei.strip().strip("\x00")
+                except Exception as err:
+                    _LOGGER.error("Invalid IMEI encoding received from %s: %s", self._peername, err)
+                    self.server._log_event(f"Invalid IMEI encoding from {self._peername}")
+                    self.transport.close()
+                    return
+
+                self.buffer = self.buffer[2+imei_len:]
+                
+                _LOGGER.info("Device connected with IMEI: %s", self.imei)
+                self.server._connections[self.imei] = self
+                self.server._log_event(f"Device connected: {self.imei}")
+                # ACK IMEI with 0x01
+                self.transport.write(b"\x01")
             
         # Parse data packets if IMEI is set
         if self.imei is not None:
@@ -99,9 +116,8 @@ class TeltonikaProtocol(asyncio.Protocol):
                 # We have a full packet
                 packet = self.buffer[8:8+data_len]
                 
-                if self.server.is_debug(self.imei):
-                    self.server._log_event(f"RAW PACKET [{self.imei}]: {packet.hex()}")
-                    _LOGGER.info("RAW PACKET [%s]: %s", self.imei, packet.hex())
+                self.server._log_event(f"RAW PACKET [{self.imei}]: {packet.hex()}")
+                _LOGGER.info("RAW PACKET [%s]: %s", self.imei, packet.hex())
                 
                 # Verify CRC (CRC-16-IBM)
                 packet_crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
@@ -268,17 +284,17 @@ class TeltonikaProtocol(asyncio.Protocol):
         
         # Common Teltonika IO IDs (FMC130) for standard logic
         mapped = True
-        if io_id == 1: # Ignition
+        if io_id in (1, 239): # Ignition (1 = Codec 8 DIN1, 239 = FMC130 CAN Ignition)
             data["ignition"] = bool(val)
         elif io_id == 240: # Motion
             data["motion"] = bool(val)
         elif io_id == 66: # External Voltage
-            data["power"] = val / 1000.0
+            data["power"] = val / 1000.0 if isinstance(val, (int, float)) and val > 100 else val
         elif io_id == 67: # Battery Voltage
-            data["battery"] = val / 1000.0
+            data["battery"] = val / 1000.0 if isinstance(val, (int, float)) and val > 100 else val
         elif io_id == 113: # Battery Level (%)
             data["batteryLevel"] = val
-        elif io_id == 24: # Speed (GNSS)
+        elif io_id in (24, 81): # Speed (24 = GNSS speed, 81 = CAN vehicle speed)
             data["speed"] = val
         elif io_id == 87: # Total Mileage
             data["totalDistance"] = val

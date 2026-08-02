@@ -219,3 +219,48 @@ async def test_protocol_codec8e_dtc_reception(mock_server):
     data = mock_server.handle_data.call_args[0][1]
     assert data[282] == "1:P0300,2:C0300"
     assert data["num_records"] == 1
+
+
+@pytest.mark.asyncio
+async def test_protocol_unsanitized_imei(mock_server):
+    """Test that IMEI with null bytes or whitespace is properly sanitized."""
+    protocol = TeltonikaProtocol(mock_server)
+    transport = MagicMock(spec=asyncio.Transport)
+    protocol.connection_made(transport)
+
+    # Device sends length 16 + IMEI with trailing null byte
+    raw_imei = b"123456789012345\x00"
+    protocol.data_received(b"\x00\x10" + raw_imei)
+
+    # Server should ACK with 0x01 and sanitize IMEI
+    transport.write.assert_called_with(b"\x01")
+    assert protocol.imei == "123456789012345"
+
+
+@pytest.mark.asyncio
+async def test_protocol_direct_preamble_fallback(mock_server):
+    """Test direct data packet preamble received without IMEI handshake."""
+    mock_server._data_callbacks = {"123456789012345": MagicMock()}
+    protocol = TeltonikaProtocol(mock_server)
+    transport = MagicMock(spec=asyncio.Transport)
+    protocol.connection_made(transport)
+
+    # Send preamble directly without IMEI handshake
+    protocol.data_received(b"\x00\x00\x00\x00")
+
+    assert protocol.imei == "123456789012345"
+
+
+def test_fmc130_can_io_mapping(mock_server):
+    """Test FMC130 CAN IO mapping (ID 239 for ignition, ID 81 for speed)."""
+    protocol = TeltonikaProtocol(mock_server)
+    protocol.imei = "123456789012345"
+    data = {}
+    
+    protocol._map_io(data, 239, 1) # CAN Ignition
+    protocol._map_io(data, 81, 55)  # CAN Speed
+    
+    assert data["ignition"] is True
+    assert data["speed"] == 55
+
+
