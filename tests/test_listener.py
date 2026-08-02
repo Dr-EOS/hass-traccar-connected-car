@@ -15,7 +15,8 @@ def mock_server():
     server.get_mappings.return_value = set()
     return server
 
-def test_protocol_handshake(mock_server):
+@pytest.mark.asyncio
+async def test_protocol_handshake(mock_server):
     """Test the initial IMEI handshake."""
     protocol = TeltonikaProtocol(mock_server)
     transport = MagicMock(spec=asyncio.Transport)
@@ -29,7 +30,8 @@ def test_protocol_handshake(mock_server):
     transport.write.assert_called_with(b"\x01")
     assert protocol.imei == "123456789012345"
 
-def test_protocol_data_reception(mock_server):
+@pytest.mark.asyncio
+async def test_protocol_data_reception(mock_server):
     """Test receiving a data packet."""
     protocol = TeltonikaProtocol(mock_server)
     transport = MagicMock(spec=asyncio.Transport)
@@ -74,7 +76,8 @@ def test_protocol_data_reception(mock_server):
     assert mock_server.handle_data.call_args[0][0] == "123456789012345"
     assert mock_server.handle_data.call_args[0][1]["num_records"] == 1
 
-def test_protocol_codec8e_reception(mock_server):
+@pytest.mark.asyncio
+async def test_protocol_codec8e_reception(mock_server):
     """Test receiving a Codec 8 Extended (0x8E) data packet."""
     import struct
     from custom_components.fmc130_traccar.listener import crc16
@@ -142,7 +145,8 @@ def test_protocol_codec8e_reception(mock_server):
     assert data["num_records"] == 1
 
 
-def test_protocol_codec8e_dtc_reception(mock_server):
+@pytest.mark.asyncio
+async def test_protocol_codec8e_dtc_reception(mock_server):
     """Test receiving DTC codes as variable length NX data in a Codec 8 Extended (0x8E) packet."""
     import struct
     from custom_components.fmc130_traccar.listener import crc16

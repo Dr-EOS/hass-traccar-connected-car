@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import logging
 from typing import Any
 
@@ -23,7 +24,7 @@ from .const import (
     TLS_MODE_HA,
     TLS_MODE_CUSTOM,
     DEFAULT_LISTENER_PORT,
-CONF_MAPPING_RPM,
+    CONF_MAPPING_RPM,
     CONF_MODIFIER_RPM,    CONF_MAPPING_FUEL,
     CONF_MODIFIER_FUEL,    CONF_MAPPING_OIL,
     CONF_MODIFIER_OIL,    CONF_MAPPING_DTC,
@@ -60,6 +61,17 @@ CONF_MAPPING_RPM,
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+def _validate_ssl_paths(user_input: dict[str, Any], errors: dict[str, str]) -> None:
+    """Validate SSL certificate file paths if custom TLS mode is selected."""
+    if user_input.get(CONF_TLS_MODE) == TLS_MODE_CUSTOM:
+        cert_path = user_input.get(CONF_SSL_CERT, "").strip()
+        key_path = user_input.get(CONF_SSL_KEY, "").strip()
+        
+        if not cert_path or not os.path.isfile(cert_path) or not os.access(cert_path, os.R_OK):
+            errors[CONF_SSL_CERT] = "invalid_cert_path"
+        if not key_path or not os.path.isfile(key_path) or not os.access(key_path, os.R_OK):
+            errors[CONF_SSL_KEY] = "invalid_key_path"
 
 def get_user_data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     """Return the user data schema with optional defaults."""
@@ -125,6 +137,8 @@ class Fmc130TraccarConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Basic validation
             if not user_input[CONF_IMEI].isdigit() or len(user_input[CONF_IMEI]) != 15:
                 errors[CONF_IMEI] = "invalid_imei"
+            
+            _validate_ssl_paths(user_input, errors)
             
             if not errors:
                 self._user_data = user_input

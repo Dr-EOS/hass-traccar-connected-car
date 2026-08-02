@@ -60,6 +60,8 @@ class Fmc130RuntimeData:
     coordinator: DataUpdateCoordinator
     server: TeltonikaServer
     port: int
+    store: Store
+    entry_data: dict
 
 type Fmc130ConfigEntry = ConfigEntry[Fmc130RuntimeData]
 
@@ -156,7 +158,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
         # Extract location and common GPS fields if present
         for field in ["latitude", "longitude", "altitude", "angle", "sat", "speed", "ignition", "motion", "power", "battery", "batteryLevel", "totalDistance"]:
             if field in data:
-                pos[field] = data.pop(field)
+                val = data.pop(field)
+                # GPS Guard: Never overwrite last known valid coordinates with (0.0, 0.0) / Null Island
+                if field in ("latitude", "longitude") and val is not None:
+                    try:
+                        float_val = float(val)
+                        if abs(float_val) < 0.000001:
+                            _LOGGER.debug("Ignoring zero/invalid GPS %s value (%s) to preserve last known position", field, val)
+                            continue
+                        pos[field] = float_val
+                    except (ValueError, TypeError):
+                        continue
+                else:
+                    pos[field] = val
             
         pos["attributes"].update(data)
         pos["fixTime"] = dt_util.utcnow().isoformat()
@@ -210,6 +224,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
         coordinator=coordinator,
         server=server,
         port=port,
+        store=store,
+        entry_data=entry_data,
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -292,7 +308,17 @@ async def update_listener(hass: HomeAssistant, entry: ConfigEntry):
 
 async def async_unload_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     """Unload a config entry."""
-    port = entry.runtime_data.port
+    runtime_data: Fmc130RuntimeData = entry.runtime_data
+    
+    # Flush pending storage writes immediately on unload/restart
+    if runtime_data and runtime_data.store and runtime_data.entry_data:
+        try:
+            await runtime_data.store.async_save(runtime_data.entry_data)
+            _LOGGER.info("Flushed FMC130 position storage for %s", entry.entry_id)
+        except Exception as err:
+            _LOGGER.error("Failed to save FMC130 position storage on unload: %s", err)
+
+    port = runtime_data.port
     
     if port in hass.data[DOMAIN]["servers"]:
         server_info = hass.data[DOMAIN]["servers"][port]
@@ -304,3 +330,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
             del hass.data[DOMAIN]["servers"][port]
 
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+

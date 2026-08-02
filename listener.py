@@ -73,8 +73,8 @@ class TeltonikaProtocol(asyncio.Protocol):
             # ACK IMEI with 0x01
             self.transport.write(b"\x01")
             
-        else:
-            # Parse data packets
+        # Parse data packets if IMEI is set
+        if self.imei is not None:
             while len(self.buffer) >= 12: # Min header length (Preamble + Length)
                 if self.buffer[:4] != b"\x00\x00\x00\x00":
                     idx = self.buffer.find(b"\x00\x00\x00\x00")
@@ -108,8 +108,9 @@ class TeltonikaProtocol(asyncio.Protocol):
                 calculated_crc = crc16(packet)
                 
                 if packet_crc != calculated_crc:
-                    _LOGGER.warning("CRC mismatch for %s: expected %04X, got %04X", self.imei, packet_crc, calculated_crc)
-                    # For now we only log it and continue, but in strict mode we might want to drop it
+                    _LOGGER.warning("CRC mismatch for %s: expected %04X, got %04X. Dropping corrupt packet.", self.imei, packet_crc, calculated_crc)
+                    self.buffer = self.buffer[8+data_len+4:]
+                    continue
                 
                 try:
                     num_records = self._parse_records(packet)
@@ -248,7 +249,10 @@ class TeltonikaProtocol(asyncio.Protocol):
             if size == 1:
                 return data[offset]
             if size == 2:
-                return struct.unpack(">H", data[offset:offset+2])[0]
+                val = struct.unpack(">H", data[offset:offset+2])[0]
+                if val >= 0x8000:
+                    val -= 0x10000
+                return val
             if size == 4:
                 return struct.unpack(">I", data[offset:offset+4])[0]
             if size == 8:

@@ -108,3 +108,12 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     await hass.async_block_till_done()
     odo_state = hass.states.get("sensor.test_vehicle_total_mileage")
     assert odo_state.state == "1234.567"
+
+    # Test Zero-Coordinate Guard (0.0, 0.0 must NOT overwrite last known position)
+    callback("123456789012345", {"latitude": 0.0, "longitude": 0.0, "speed": 0})
+    await hass.async_block_till_done()
+    tracker_state = hass.states.get("device_tracker.test_vehicle")
+    assert tracker_state.attributes["latitude"] == 52.5200
+    assert tracker_state.attributes["longitude"] == 13.4050
+    assert tracker_state.attributes["speed"] == 0
+

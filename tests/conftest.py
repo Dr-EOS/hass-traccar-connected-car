@@ -8,6 +8,9 @@ import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+pytest_plugins = ["pytest_homeassistant_custom_component"]
+
+
 from custom_components.fmc130_traccar.const import (
     DOMAIN,
     CONF_IMEI,
