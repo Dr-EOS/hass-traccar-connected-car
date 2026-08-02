@@ -48,6 +48,14 @@ def auto_enable_custom_integrations(enable_custom_integrations):
     yield
 
 @pytest.fixture(autouse=True)
+def mock_storage():
+    """Mock store async_load to ensure clean initial test state."""
+    with patch("homeassistant.helpers.storage.Store.async_load", new_callable=AsyncMock, return_value=None):
+        yield
+
+
+
+@pytest.fixture(autouse=True)
 def mock_teltonika_server() -> Generator[AsyncMock, None, None]:
     """Mock TeltonikaServer to avoid real sockets."""
     with patch(

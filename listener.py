@@ -23,6 +23,51 @@ def crc16(data: bytes) -> int:
                 crc >>= 1
     return crc
 
+def _inspect_certificate(cert_path: str) -> dict[str, Any]:
+    """Inspect SSL certificate file and extract metadata including subject, issuer, and expiration date."""
+    from homeassistant.util import dt as dt_util
+    info: dict[str, Any] = {"path": cert_path, "status": "unknown"}
+    try:
+        with open(cert_path, "rb") as cert_file:
+            cert_bytes = cert_file.read()
+
+        try:
+            from cryptography import x509
+            from cryptography.hazmat.backends import default_backend
+
+            cert = x509.load_pem_x509_certificate(cert_bytes, default_backend())
+            
+            subject_parts = [f"{attr.rfc4514_attribute_name}={attr.value}" for attr in cert.subject]
+            issuer_parts = [f"{attr.rfc4514_attribute_name}={attr.value}" for attr in cert.issuer]
+            
+            not_before = getattr(cert, "not_valid_before_utc", None) or getattr(cert, "not_valid_before", None)
+            not_after = getattr(cert, "not_valid_after_utc", None) or getattr(cert, "not_valid_after", None)
+            
+            if not_after and not_before:
+                from datetime import timezone
+                if not_after.tzinfo is None:
+                    not_after = not_after.replace(tzinfo=timezone.utc)
+                    not_before = not_before.replace(tzinfo=timezone.utc)
+                
+                now_utc = dt_util.utcnow()
+                days_remaining = (not_after - now_utc).days
+                info.update({
+                    "subject": ", ".join(subject_parts) or "Unknown",
+                    "issuer": ", ".join(issuer_parts) or "Unknown",
+                    "valid_from": not_before.isoformat(),
+                    "expires": not_after.isoformat(),
+                    "days_remaining": days_remaining,
+                    "status": "valid" if days_remaining > 0 else "expired",
+                })
+                return info
+        except ImportError:
+            pass
+    except Exception as err:
+        info["status"] = f"error: {err}"
+        _LOGGER.warning("Could not parse certificate file %s: %s", cert_path, err)
+
+    return info
+
 class TeltonikaProtocol(asyncio.Protocol):
     """Protocol for Teltonika FMC130 Codec 8/8E."""
 
@@ -36,12 +81,32 @@ class TeltonikaProtocol(asyncio.Protocol):
     def connection_made(self, transport: asyncio.Transport) -> None:
         self.transport = transport
         self._peername = transport.get_extra_info("peername")
-        _LOGGER.info("Connection from %s", self._peername)
-        self.server._log_event(f"New connection from {self._peername}")
+        ssl_obj = transport.get_extra_info("ssl_object")
+        cipher_desc = ""
+        if ssl_obj:
+            try:
+                cipher = ssl_obj.cipher()
+                if cipher:
+                    cipher_desc = f" [TLS {cipher[1]} / {cipher[0]}]"
+            except Exception:
+                cipher_desc = " [TLS]"
+        else:
+            cipher_desc = " [Plain TCP]"
+
+        _LOGGER.info("Incoming connection established from %s%s", self._peername, cipher_desc)
+        self.server._log_event(f"New connection from {self._peername}{cipher_desc}")
+
+    def connection_lost(self, exc: Exception | None) -> None:
+        imei_str = self.imei or "Unauthenticated"
+        reason = f": {exc}" if exc else ""
+        _LOGGER.info("Connection closed with peer %s (IMEI: %s)%s", self._peername, imei_str, reason)
+        self.server._log_event(f"Connection closed: {self._peername} (IMEI: {imei_str})")
+        if self.imei and self.server:
+            self.server.handle_disconnect(self.imei)
 
     def data_received(self, data: bytes) -> None:
-        _LOGGER.info("Incoming message from %s (%d bytes): %s", self._peername, len(data), data.hex())
-        self.server._log_event(f"Incoming message from {self._peername} ({len(data)} bytes): {data.hex()}")
+        _LOGGER.info("Received payload from %s (%d bytes): %s", self._peername, len(data), data.hex())
+        self.server._log_event(f"Incoming payload from {self._peername} ({len(data)} bytes): {data.hex()}")
         self.buffer.extend(data)
         
         if self.imei is None:
@@ -50,7 +115,7 @@ class TeltonikaProtocol(asyncio.Protocol):
                 if len(self.server._data_callbacks) == 1:
                     registered_imei = next(iter(self.server._data_callbacks.keys()))
                     self.imei = registered_imei
-                    _LOGGER.info("Direct data packet received from %s without IMEI handshake; using registered IMEI: %s", self._peername, self.imei)
+                    _LOGGER.info("Direct data packet received from %s without prior IMEI handshake; associating with registered IMEI: %s", self._peername, self.imei)
                     self.server._connections[self.imei] = self
                     self.server._log_event(f"Associated connection from {self._peername} with registered IMEI: {self.imei}")
                 else:
@@ -84,11 +149,12 @@ class TeltonikaProtocol(asyncio.Protocol):
 
                 self.buffer = self.buffer[2+imei_len:]
                 
-                _LOGGER.info("Device connected with IMEI: %s", self.imei)
+                _LOGGER.info("IMEI handshake successful for peer %s: Raw IMEI='%s', Sanitized IMEI='%s'", self._peername, raw_imei, self.imei)
                 self.server._connections[self.imei] = self
-                self.server._log_event(f"Device connected: {self.imei}")
+                self.server._log_event(f"IMEI authenticated: {self.imei} from {self._peername}")
                 # ACK IMEI with 0x01
                 self.transport.write(b"\x01")
+                _LOGGER.info("Sent 1-byte ACK (0x01) handshake response to IMEI %s at %s", self.imei, self._peername)
             
         # Parse data packets if IMEI is set
         if self.imei is not None:
@@ -117,21 +183,23 @@ class TeltonikaProtocol(asyncio.Protocol):
                 packet = self.buffer[8:8+data_len]
                 
                 self.server._log_event(f"RAW PACKET [{self.imei}]: {packet.hex()}")
-                _LOGGER.info("RAW PACKET [%s]: %s", self.imei, packet.hex())
+                _LOGGER.info("Received telemetry packet from IMEI %s (%d bytes payload): %s", self.imei, len(packet), packet.hex())
                 
                 # Verify CRC (CRC-16-IBM)
                 packet_crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
                 calculated_crc = crc16(packet)
                 
                 if packet_crc != calculated_crc:
-                    _LOGGER.warning("CRC mismatch for %s: expected %04X, got %04X. Dropping corrupt packet.", self.imei, packet_crc, calculated_crc)
+                    _LOGGER.warning("CRC mismatch for IMEI %s: expected %04X, got %04X. Dropping corrupt packet.", self.imei, packet_crc, calculated_crc)
                     self.buffer = self.buffer[8+data_len+4:]
                     continue
                 
                 try:
                     num_records = self._parse_records(packet)
                     # ACK with number of records (4 bytes)
-                    self.transport.write(struct.pack(">I", num_records))
+                    ack_bytes = struct.pack(">I", num_records)
+                    self.transport.write(ack_bytes)
+                    _LOGGER.info("Sent 4-byte ACK packet (0x%s -> %d records) to IMEI %s (%s)", ack_bytes.hex(), num_records, self.imei, self._peername)
                 except Exception as err:
                     _LOGGER.error("Error parsing Teltonika packet from %s: %s", self.imei, err)
                     self.transport.close()
@@ -251,7 +319,22 @@ class TeltonikaProtocol(asyncio.Protocol):
         if len(data) > offset and data[offset] != num_records:
             _LOGGER.debug("Num records check at end: %d != %d", data[offset], num_records)
 
-        self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec {codec_id})")
+        _LOGGER.info(
+            "Parsed Codec 0x%02X payload from IMEI %s (%s): %d records processed. GPS=(lat=%.6f, lon=%.6f, alt=%dm, speed=%d km/h, sat=%d) | Total attributes decoded: %d",
+            codec_id,
+            self.imei,
+            self._peername,
+            num_records,
+            last_extracted_data.get("latitude", 0.0),
+            last_extracted_data.get("longitude", 0.0),
+            last_extracted_data.get("altitude", 0),
+            last_extracted_data.get("speed", 0),
+            last_extracted_data.get("sat", 0),
+            len(last_extracted_data),
+        )
+
+        self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec 0x{codec_id:02X})")
+
         
         if last_extracted_data:
             last_extracted_data["num_records"] = num_records
@@ -371,8 +454,16 @@ class TeltonikaServer:
         self._data_callbacks = {} # IMEI -> callback
 
     def set_debug(self, imei: str, enabled: bool) -> None:
-        """Set debug mode for an IMEI."""
+        """Set debug mode for an IMEI and dynamically configure logger level."""
         self._debug_modes[imei] = enabled
+        if enabled:
+            _LOGGER.setLevel(logging.DEBUG)
+            _LOGGER.info("Verbose logging ENABLED via integration setting for IMEI %s", imei)
+            self._log_event(f"Verbose logging ENABLED for IMEI {imei}")
+        else:
+            if not any(self._debug_modes.values()):
+                _LOGGER.setLevel(logging.WARNING)
+
 
     def is_debug(self, imei: str) -> bool:
         """Check if debug mode is enabled for an IMEI."""
@@ -419,7 +510,7 @@ class TeltonikaServer:
     async def async_start(self, port: int, tls_config: dict | None = None) -> None:
         """Start the TCP/TLS server."""
         ssl_context = None
-        mode = tls_config.get("mode", TLS_MODE_NONE)
+        mode = tls_config.get("mode", TLS_MODE_NONE) if tls_config else TLS_MODE_NONE
         
         if mode != TLS_MODE_NONE:
             cert_file = None
@@ -437,8 +528,40 @@ class TeltonikaServer:
                 key_file = tls_config.get("key")
                 
             if not cert_file or not key_file:
-                _LOGGER.error("SSL mode %s requested but paths missing", mode)
+                _LOGGER.error("SSL mode %s requested but cert/key paths missing", mode)
                 return
+
+            _LOGGER.info("Loading TLS configuration (Mode: %s) with cert='%s', key='%s'", mode, cert_file, key_file)
+            cert_info = _inspect_certificate(cert_file)
+            if cert_info.get("status") in ("valid", "expired"):
+                _LOGGER.info(
+                    "TLS Certificate loaded for Teltonika listener:\n"
+                    "  ├─ File Path: %s\n"
+                    "  ├─ Subject: %s\n"
+                    "  ├─ Issuer: %s\n"
+                    "  ├─ Valid From: %s\n"
+                    "  ├─ Expiration Date: %s (%d days remaining)\n"
+                    "  └─ Status: %s",
+                    cert_file,
+                    cert_info.get("subject"),
+                    cert_info.get("issuer"),
+                    cert_info.get("valid_from"),
+                    cert_info.get("expires"),
+                    cert_info.get("days_remaining", 0),
+                    cert_info.get("status", "unknown").upper(),
+                )
+                self._log_event(
+                    f"TLS Certificate loaded ({mode}): Subject='{cert_info.get('subject')}', Expires={cert_info.get('expires')} ({cert_info.get('days_remaining')} days left)"
+                )
+                if cert_info.get("days_remaining", 999) <= 30:
+                    _LOGGER.warning(
+                        "TLS Certificate '%s' is expiring soon (%d days remaining on %s)!",
+                        cert_file,
+                        cert_info.get("days_remaining"),
+                        cert_info.get("expires"),
+                    )
+            else:
+                _LOGGER.info("TLS Certificate path: '%s' (Key path: '%s')", cert_file, key_file)
 
             try:
                 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -446,7 +569,7 @@ class TeltonikaServer:
                 await self.hass.async_add_executor_job(
                     ssl_context.load_cert_chain, cert_file, key_file
                 )
-                _LOGGER.info("TLS enabled (%s) for Teltonika listener on port %d", mode, port)
+                _LOGGER.info("TLS certificate chain successfully loaded for Teltonika listener on port %d", port)
             except Exception as err:
                 _LOGGER.error("Failed to load SSL certificates (%s): %s", mode, err)
                 return
@@ -458,7 +581,8 @@ class TeltonikaServer:
             port=port,
             ssl=ssl_context
         )
-        _LOGGER.info("Started Teltonika listener on port %d", port)
+        _LOGGER.info("Teltonika %s listener successfully started and listening on 0.0.0.0:%d", "TLS" if ssl_context else "TCP", port)
+        self._log_event(f"Teltonika server started on port {port} ({'TLS ' + mode if mode != TLS_MODE_NONE else 'Plain TCP'})")
 
     async def async_stop(self) -> None:
         """Stop the server."""

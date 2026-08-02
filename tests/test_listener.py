@@ -264,3 +264,12 @@ def test_fmc130_can_io_mapping(mock_server):
     assert data["speed"] == 55
 
 
+def test_certificate_inspection_nonexistent_file():
+    """Test _inspect_certificate helper function with missing file."""
+    from custom_components.fmc130_traccar.listener import _inspect_certificate
+    info = _inspect_certificate("/nonexistent/cert.pem")
+    assert info["path"] == "/nonexistent/cert.pem"
+    assert "error" in info["status"]
+
+
+

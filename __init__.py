@@ -68,6 +68,14 @@ type Fmc130ConfigEntry = ConfigEntry[Fmc130RuntimeData]
 async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     """Set up FMC130 from a config entry."""
     
+    _LOGGER.info(
+        "Loading Teltonika FMC130 integration for vehicle '%s' (IMEI: %s, Port: %d, TLS Mode: %s)",
+        entry.data[CONF_DEVICE_NAME],
+        entry.data[CONF_IMEI],
+        entry.data.get(CONF_LISTENER_PORT, 5027),
+        entry.data.get(CONF_TLS_MODE, TLS_MODE_NONE),
+    )
+
     # Initialize domain data
     hass.data.setdefault(DOMAIN, {"servers": {}})
 
@@ -77,6 +85,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
 
     if loaded_data:
         entry_data = loaded_data
+        _LOGGER.info("Loaded persisted state for '%s' from storage", entry.data[CONF_DEVICE_NAME])
     else:
         # State storage for push data
         entry_data = {
@@ -123,6 +132,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     io_modifiers.setdefault(67, ["*0.001"]) # Battery Voltage
     mapped_ids.update({1, 24, 66, 67, 81, 87, 113, 239, 240})
 
+    _LOGGER.info(
+        "Configured IO tracking for '%s' (IMEI: %s): %d mapped IO IDs active",
+        entry.data[CONF_DEVICE_NAME],
+        entry.data[CONF_IMEI],
+        len(mapped_ids),
+    )
+
     @callback
     def handle_direct_telemetry(imei, data):
         """Handle data pushed from the Teltonika listener."""
@@ -159,23 +175,45 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
                             continue
                         pos[field] = float_val
                     except (ValueError, TypeError):
-                        continue
+                        pass
                 else:
                     pos[field] = val
             
-        pos["attributes"].update(data)
-        pos["fixTime"] = dt_util.utcnow().isoformat()
+        # Extra dynamic attributes
+        from .utils import apply_modifier
+        for key, val in data.items():
+            if isinstance(key, int):
+                pos["attributes"][key] = val
+                pos["attributes"][str(key)] = val
+                modifiers = io_modifiers.get(key, [None])
+                for mod in modifiers:
+                    converted = apply_modifier(val, mod)
+                    pos["attributes"][f"io_{key}"] = converted
+            else:
+                pos["attributes"][key] = val
+
+
+        pos["time"] = pos["fixTime"] = dt_util.utcnow().isoformat()
+        
+        _LOGGER.info(
+            "Telemetry updated for vehicle '%s' (IMEI: %s): %d total state attributes updated",
+            entry.data[CONF_DEVICE_NAME],
+            imei,
+            len(pos["attributes"]),
+        )
         
         coordinator.async_set_updated_data(entry_data)
         # Delay save to avoid writing to disk on every quick payload
-        store.async_delay_save(lambda: entry_data, 5.0)
+        store.async_delay_save(lambda: entry_data, 30)
 
-    # Start or Get Direct Listener
+    # Server management
     port = entry.data.get(CONF_LISTENER_PORT, 5027)
+    tls_mode = entry.data.get(CONF_TLS_MODE, TLS_MODE_NONE)
+    
     if port not in hass.data[DOMAIN]["servers"]:
         server = TeltonikaServer(hass)
         tls_config = {
-            "mode": entry.data.get(CONF_TLS_MODE, TLS_MODE_NONE),
+            "mode": tls_mode,
             "cert": entry.data.get(CONF_SSL_CERT),
             "key": entry.data.get(CONF_SSL_KEY),
         }
@@ -191,7 +229,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     
     # Set debug mode for this device
     imei = entry.data[CONF_IMEI]
-    server.set_debug(imei, entry.data.get(CONF_DEBUG_MODE, False))
+    debug_enabled = entry.options.get(CONF_DEBUG_MODE, entry.data.get(CONF_DEBUG_MODE, False))
+    server.set_debug(imei, debug_enabled)
+
     server.set_mappings(imei, mapped_ids)
     
     # Register this device's callback
@@ -211,6 +251,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     
     # Register services once
     _async_setup_services(hass)
+    
+    _LOGGER.info(
+        "Successfully set up Teltonika FMC130 Connected Car integration for '%s' (IMEI: %s) listening on port %d",
+        entry.data[CONF_DEVICE_NAME],
+        entry.data[CONF_IMEI],
+        port,
+    )
     
     return True
 
