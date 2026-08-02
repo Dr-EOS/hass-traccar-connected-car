@@ -532,8 +532,9 @@ class TeltonikaServer:
                 return
 
             _LOGGER.info("Loading TLS configuration (Mode: %s) with cert='%s', key='%s'", mode, cert_file, key_file)
-            cert_info = _inspect_certificate(cert_file)
+            cert_info = await self.hass.async_add_executor_job(_inspect_certificate, cert_file)
             if cert_info.get("status") in ("valid", "expired"):
+
                 _LOGGER.info(
                     "TLS Certificate loaded for Teltonika listener:\n"
                     "  ├─ File Path: %s\n"
