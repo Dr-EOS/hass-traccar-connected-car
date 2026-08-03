@@ -209,8 +209,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     port = entry.data.get(CONF_LISTENER_PORT, 5027)
     tls_mode = entry.data.get(CONF_TLS_MODE, TLS_MODE_NONE)
     
+    imei = entry.data[CONF_IMEI]
+    debug_enabled = entry.options.get(CONF_DEBUG_MODE, entry.data.get(CONF_DEBUG_MODE, False))
+
     if port not in hass.data[DOMAIN]["servers"]:
         server = TeltonikaServer(hass)
+        server.set_debug(imei, debug_enabled)
         tls_config = {
             "mode": tls_mode,
             "cert": entry.data.get(CONF_SSL_CERT),
@@ -225,13 +229,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
     server_info = hass.data[DOMAIN]["servers"][port]
     server = server_info["instance"]
     server_info["devices"].add(entry.entry_id)
-    
-    # Set debug mode for this device
-    imei = entry.data[CONF_IMEI]
-    debug_enabled = entry.options.get(CONF_DEBUG_MODE, entry.data.get(CONF_DEBUG_MODE, False))
     server.set_debug(imei, debug_enabled)
 
     server.set_mappings(imei, mapped_ids)
+
     
     # Register this device's callback
     unsub_data = server.async_add_data_callback(imei, handle_direct_telemetry)
