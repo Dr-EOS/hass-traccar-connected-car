@@ -195,12 +195,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: Fmc130ConfigEntry):
 
         pos["time"] = pos["fixTime"] = dt_util.utcnow().isoformat()
         
-        _LOGGER.info(
-            "Telemetry updated for vehicle '%s' (IMEI: %s): %d total state attributes updated",
-            entry.data[CONF_DEVICE_NAME],
+        server.log_verbose(
+            f"Telemetry updated for vehicle '{entry.data[CONF_DEVICE_NAME]}' (IMEI: {imei}): {len(pos['attributes'])} total state attributes updated",
             imei,
-            len(pos["attributes"]),
         )
+
         
         coordinator.async_set_updated_data(entry_data)
         # Delay save to avoid writing to disk on every quick payload

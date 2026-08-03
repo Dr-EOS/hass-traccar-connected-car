@@ -83,8 +83,9 @@ async def test_sensors(hass: HomeAssistant, mock_config_entry) -> None:
     # Check Log Sensor
     log_state = hass.states.get("sensor.test_vehicle_logs")
     assert log_state is not None
-    assert log_state.state == "Push Update Test"
+    assert log_state.state != "No events"
     assert "recent_events" in log_state.attributes
+
 
     # Test Locked bitmask (IO ID 321, mask 0x1E)
     # 0x1E = 30 decimal

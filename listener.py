@@ -93,20 +93,17 @@ class TeltonikaProtocol(asyncio.Protocol):
         else:
             cipher_desc = " [Plain TCP]"
 
-        _LOGGER.info("Incoming connection established from %s%s", self._peername, cipher_desc)
-        self.server._log_event(f"New connection from {self._peername}{cipher_desc}")
+        self.server.log_verbose(f"Incoming connection established from {self._peername}{cipher_desc}")
 
     def connection_lost(self, exc: Exception | None) -> None:
         imei_str = self.imei or "Unauthenticated"
         reason = f": {exc}" if exc else ""
-        _LOGGER.info("Connection closed with peer %s (IMEI: %s)%s", self._peername, imei_str, reason)
-        self.server._log_event(f"Connection closed: {self._peername} (IMEI: {imei_str})")
+        self.server.log_verbose(f"Connection closed with peer {self._peername} (IMEI: {imei_str}){reason}")
         if self.imei and self.server:
             self.server.handle_disconnect(self.imei)
 
     def data_received(self, data: bytes) -> None:
-        _LOGGER.info("Received payload from %s (%d bytes): %s", self._peername, len(data), data.hex())
-        self.server._log_event(f"Incoming payload from {self._peername} ({len(data)} bytes): {data.hex()}")
+        self.server.log_verbose(f"Received payload from {self._peername} ({len(data)} bytes): {data.hex()}")
         self.buffer.extend(data)
         
         if self.imei is None:
@@ -115,9 +112,8 @@ class TeltonikaProtocol(asyncio.Protocol):
                 if len(self.server._data_callbacks) == 1:
                     registered_imei = next(iter(self.server._data_callbacks.keys()))
                     self.imei = registered_imei
-                    _LOGGER.info("Direct data packet received from %s without prior IMEI handshake; associating with registered IMEI: %s", self._peername, self.imei)
+                    self.server.log_verbose(f"Direct data packet preamble 0x00000000 received from {self._peername} without prior IMEI handshake. Associated with registered IMEI: {self.imei}")
                     self.server._connections[self.imei] = self
-                    self.server._log_event(f"Associated connection from {self._peername} with registered IMEI: {self.imei}")
                 else:
                     _LOGGER.warning("Direct packet preamble received from %s without IMEI handshake, but %d IMEIs registered", self._peername, len(self.server._data_callbacks))
 
@@ -131,7 +127,7 @@ class TeltonikaProtocol(asyncio.Protocol):
                 # Security: Sanity check IMEI length to prevent buffer overflow attacks
                 if imei_len == 0 or imei_len > 100:
                     _LOGGER.warning("Invalid IMEI length (%d) from %s. Closing connection.", imei_len, self._peername)
-                    self.server._log_event(f"Invalid IMEI length ({imei_len}) from {self._peername}")
+                    self.server.log_verbose(f"Invalid IMEI length ({imei_len}) from {self._peername}")
                     self.transport.close()
                     return
                     
@@ -143,18 +139,16 @@ class TeltonikaProtocol(asyncio.Protocol):
                     self.imei = raw_imei.strip().strip("\x00")
                 except Exception as err:
                     _LOGGER.error("Invalid IMEI encoding received from %s: %s", self._peername, err)
-                    self.server._log_event(f"Invalid IMEI encoding from {self._peername}")
+                    self.server.log_verbose(f"Invalid IMEI encoding from {self._peername}")
                     self.transport.close()
                     return
 
                 self.buffer = self.buffer[2+imei_len:]
                 
-                _LOGGER.info("IMEI handshake successful for peer %s: Raw IMEI='%s', Sanitized IMEI='%s'", self._peername, raw_imei, self.imei)
                 self.server._connections[self.imei] = self
-                self.server._log_event(f"IMEI authenticated: {self.imei} from {self._peername}")
+                self.server.log_verbose(f"IMEI handshake authenticated for peer {self._peername}: Raw IMEI='{raw_imei}', Sanitized IMEI='{self.imei}'. Sent ACK 0x01")
                 # ACK IMEI with 0x01
                 self.transport.write(b"\x01")
-                _LOGGER.info("Sent 1-byte ACK (0x01) handshake response to IMEI %s at %s", self.imei, self._peername)
             
         # Parse data packets if IMEI is set
         if self.imei is not None:
@@ -182,8 +176,7 @@ class TeltonikaProtocol(asyncio.Protocol):
                 # We have a full packet
                 packet = self.buffer[8:8+data_len]
                 
-                self.server._log_event(f"RAW PACKET [{self.imei}]: {packet.hex()}")
-                _LOGGER.info("Received telemetry packet from IMEI %s (%d bytes payload): %s", self.imei, len(packet), packet.hex())
+                self.server.log_verbose(f"Received telemetry packet from IMEI {self.imei} ({len(packet)} bytes payload): {packet.hex()}", self.imei)
                 
                 # Verify CRC (CRC-16-IBM)
                 packet_crc = struct.unpack(">I", self.buffer[8+data_len:8+data_len+4])[0]
@@ -199,7 +192,7 @@ class TeltonikaProtocol(asyncio.Protocol):
                     # ACK with number of records (4 bytes)
                     ack_bytes = struct.pack(">I", num_records)
                     self.transport.write(ack_bytes)
-                    _LOGGER.info("Sent 4-byte ACK packet (0x%s -> %d records) to IMEI %s (%s)", ack_bytes.hex(), num_records, self.imei, self._peername)
+                    self.server.log_verbose(f"Sent 4-byte ACK packet (0x{ack_bytes.hex()} -> {num_records} records) to IMEI {self.imei} ({self._peername})", self.imei)
                 except Exception as err:
                     _LOGGER.error("Error parsing Teltonika packet from %s: %s", self.imei, err)
                     self.transport.close()
@@ -319,28 +312,21 @@ class TeltonikaProtocol(asyncio.Protocol):
         if len(data) > offset and data[offset] != num_records:
             _LOGGER.debug("Num records check at end: %d != %d", data[offset], num_records)
 
-        _LOGGER.info(
-            "Parsed Codec 0x%02X payload from IMEI %s (%s): %d records processed. GPS=(lat=%.6f, lon=%.6f, alt=%dm, speed=%d km/h, sat=%d) | Total attributes decoded: %d",
-            codec_id,
-            self.imei,
-            self._peername,
-            num_records,
-            last_extracted_data.get("latitude", 0.0),
-            last_extracted_data.get("longitude", 0.0),
-            last_extracted_data.get("altitude", 0),
-            last_extracted_data.get("speed", 0),
-            last_extracted_data.get("sat", 0),
-            len(last_extracted_data),
+        msg = (
+            f"Parsed Codec 0x{codec_id:02X} payload from IMEI {self.imei} ({self._peername}): "
+            f"{num_records} records. GPS=(lat={last_extracted_data.get('latitude', 0.0):.6f}, "
+            f"lon={last_extracted_data.get('longitude', 0.0):.6f}, alt={last_extracted_data.get('altitude', 0)}m, "
+            f"spd={last_extracted_data.get('speed', 0)}km/h, sat={last_extracted_data.get('sat', 0)}) | "
+            f"Decoded {len(last_extracted_data)} attributes"
         )
+        self.server.log_verbose(msg, self.imei)
 
-        self.server._log_event(f"Data received from {self.imei}: {num_records} records (Codec 0x{codec_id:02X})")
-
-        
         if last_extracted_data:
             last_extracted_data["num_records"] = num_records
             self.server.handle_data(self.imei, last_extracted_data)
         
         return num_records
+
 
     def _unpack_value(self, data: bytes, offset: int, size: int) -> int | None:
         """Unpack IO value of given size."""
@@ -458,16 +444,35 @@ class TeltonikaServer:
         self._debug_modes[imei] = enabled
         if enabled:
             _LOGGER.setLevel(logging.DEBUG)
-            _LOGGER.info("Verbose logging ENABLED via integration setting for IMEI %s", imei)
-            self._log_event(f"Verbose logging ENABLED for IMEI {imei}")
+            self.log_verbose(f"Verbose logging ENABLED via extension setting for IMEI {imei}", imei)
         else:
             if not any(self._debug_modes.values()):
                 _LOGGER.setLevel(logging.WARNING)
 
+    def is_debug(self, imei: str | None = None) -> bool:
+        """Check if debug mode is enabled for an IMEI or globally on this server."""
+        if not imei:
+            return any(self._debug_modes.values())
+        if self._debug_modes.get(imei, False):
+            return True
+        clean = str(imei).strip().lstrip("0")
+        for k, v in self._debug_modes.items():
+            if v and (k == imei or str(k).strip().lstrip("0") == clean):
+                return True
+        return any(self._debug_modes.values())
 
-    def is_debug(self, imei: str) -> bool:
-        """Check if debug mode is enabled for an IMEI."""
-        return self._debug_modes.get(imei, False)
+    def is_debug_any(self) -> bool:
+        """Check if debug/verbose logging mode is enabled for any device."""
+        return any(self._debug_modes.values())
+
+    def log_verbose(self, message: str, imei: str | None = None) -> None:
+        """Log event to UI log sensor and output to system log UI if extension Debug Mode is ON."""
+        self._log_event(message)
+        if self.is_debug(imei):
+            _LOGGER.warning("[FMC130 DEBUG] %s", message)
+        _LOGGER.info("%s", message)
+
+
 
     def set_mappings(self, imei: str, mapping_ids: set[int]) -> None:
         """Set dynamic IO mappings for an IMEI."""
@@ -551,7 +556,7 @@ class TeltonikaServer:
                     cert_info.get("days_remaining", 0),
                     cert_info.get("status", "unknown").upper(),
                 )
-                self._log_event(
+                self.log_verbose(
                     f"TLS Certificate loaded ({mode}): Subject='{cert_info.get('subject')}', Expires={cert_info.get('expires')} ({cert_info.get('days_remaining')} days left)"
                 )
                 if cert_info.get("days_remaining", 999) <= 30:
@@ -562,7 +567,7 @@ class TeltonikaServer:
                         cert_info.get("expires"),
                     )
             else:
-                _LOGGER.info("TLS Certificate path: '%s' (Key path: '%s')", cert_file, key_file)
+                self.log_verbose(f"TLS Certificate path: '{cert_file}' (Key path: '{key_file}')")
 
             try:
                 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -570,7 +575,7 @@ class TeltonikaServer:
                 await self.hass.async_add_executor_job(
                     ssl_context.load_cert_chain, cert_file, key_file
                 )
-                _LOGGER.info("TLS certificate chain successfully loaded for Teltonika listener on port %d", port)
+                self.log_verbose(f"TLS certificate chain successfully loaded for Teltonika listener on port {port}")
             except Exception as err:
                 _LOGGER.error("Failed to load SSL certificates (%s): %s", mode, err)
                 return
@@ -582,8 +587,8 @@ class TeltonikaServer:
             port=port,
             ssl=ssl_context
         )
-        _LOGGER.info("Teltonika %s listener successfully started and listening on 0.0.0.0:%d", "TLS" if ssl_context else "TCP", port)
-        self._log_event(f"Teltonika server started on port {port} ({'TLS ' + mode if mode != TLS_MODE_NONE else 'Plain TCP'})")
+        self.log_verbose(f"Teltonika server started and listening on port {port} ({'TLS ' + mode if mode != TLS_MODE_NONE else 'Plain TCP'})")
+
 
     async def async_stop(self) -> None:
         """Stop the server."""
